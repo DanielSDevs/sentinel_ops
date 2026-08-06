@@ -1,0 +1,36 @@
+{% load static %}
+<header class="navbar">
+    <div class="navbar__inner container">
+        <a class="navbar__brand" href="{% url 'core:home' %}">
+            <img src="{% static 'img/favicon.svg' %}" alt="" class="navbar__logo">
+            Sentinel<span>Ops</span>
+        </a>
+
+        <button class="navbar__toggle" type="button" aria-label="Abrir menu" aria-expanded="false" data-nav-toggle>
+            <span></span><span></span><span></span>
+        </button>
+
+        <nav class="navbar__menu" data-nav-menu>
+            <a class="navbar__link" href="{% url 'core:home' %}">Home</a>
+            <a class="navbar__link" href="{% url 'forecast:index' %}">Forecast Engine</a>
+            <a class="navbar__link" href="{% url 'monitor:index' %}">Ops Monitor</a>
+            <a class="navbar__link" href="{% url 'alerts:index' %}">Risk Alert Center</a>
+            <a class="navbar__link" href="{% url 'copilot:index' %}">Agent Copilot</a>
+            <a class="navbar__link" href="{% url 'reports:index' %}">Reporting Hub</a>
+            <a class="navbar__link" href="{% url 'core:sobre' %}">Sobre</a>
+
+            {% if user.is_authenticated %}
+                <form action="{% url 'accounts:logout' %}" method="post" class="navbar__auth">
+                    {% csrf_token %}
+                    <span class="navbar__user">Olá, {{ user.username }}</span>
+                    <button type="submit" class="btn btn--outline btn--sm">Sair</button>
+                </form>
+            {% else %}
+                <div class="navbar__auth">
+                    <a class="btn btn--outline btn--sm" href="{% url 'accounts:login' %}">Entrar</a>
+                    <a class="btn btn--primary btn--sm" href="{% url 'accounts:register' %}">Cadastrar</a>
+                </div>
+            {% endif %}
+        </nav>
+    </div>
+</header>

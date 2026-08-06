@@ -1,0 +1,26 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}SentinelOps — Entrar{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'accounts/css/auth.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-card card">
+    <h1>Entrar</h1>
+    <p class="card__subtitle">Acesse a plataforma SentinelOps.</p>
+
+    <form method="post" class="form">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <input type="hidden" name="next" value="{{ next }}">
+        <button type="submit" class="btn btn--primary">Entrar</button>
+    </form>
+
+    <p class="auth-card__alt">
+        Ainda não tem conta? <a href="{% url 'accounts:register' %}">Cadastre-se</a>
+    </p>
+</div>
+{% endblock %}

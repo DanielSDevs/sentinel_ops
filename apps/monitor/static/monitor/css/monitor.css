@@ -1,0 +1,16 @@
+/* Ops Monitor */
+
+.monitor-metric {
+    text-align: center;
+}
+
+.monitor-metric__value {
+    font-size: 2.4rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    margin-bottom: var(--space-1);
+}
+
+.card + .card {
+    margin-top: var(--space-3);
+}

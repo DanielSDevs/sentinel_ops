@@ -1,0 +1,55 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}SentinelOps — Home{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'core/css/home.css' %}">
+{% endblock %}
+
+{% block content %}
+<section class="hero">
+    <h1>Inteligência preditiva para operações de TI</h1>
+    <p class="hero__subtitle">
+        O SentinelOps centraliza dados, modelos analíticos e funcionalidades operacionais
+        para gerar previsões (D+1 e D+7), identificar padrões e riscos e apoiar a tomada
+        de decisão em tempo real.
+    </p>
+    {% if not user.is_authenticated %}
+        <div class="hero__actions">
+            <a class="btn btn--primary" href="{% url 'accounts:register' %}">Começar agora</a>
+            <a class="btn btn--outline" href="{% url 'core:sobre' %}">Saiba mais</a>
+        </div>
+    {% endif %}
+</section>
+
+<section>
+    <h2>Módulos da plataforma</h2>
+    <div class="grid grid--3">
+        <a class="card module-card" href="{% url 'forecast:index' %}">
+            <h3 class="card__title">📈 Forecast Engine</h3>
+            <p class="card__subtitle">Previsões D+1 e D+7 de volume de incidentes e tendências futuras.</p>
+        </a>
+        <a class="card module-card" href="{% url 'monitor:index' %}">
+            <h3 class="card__title">🖥️ Ops Monitor</h3>
+            <p class="card__subtitle">Resumo da operação em tempo real e visão corrente da saúde operacional.</p>
+        </a>
+        <a class="card module-card" href="{% url 'alerts:index' %}">
+            <h3 class="card__title">🚨 Risk Alert Center</h3>
+            <p class="card__subtitle">Notificações sobre risco operacional e alertas preventivos.</p>
+        </a>
+        <a class="card module-card" href="{% url 'copilot:index' %}">
+            <h3 class="card__title">🤖 Agent Copilot</h3>
+            <p class="card__subtitle">Chatbot com resumos específicos e respostas rápidas contextualizadas.</p>
+        </a>
+        <a class="card module-card" href="{% url 'reports:index' %}">
+            <h3 class="card__title">📊 Reporting Hub</h3>
+            <p class="card__subtitle">Reports diários e semanais com consolidação gerencial e executiva.</p>
+        </a>
+    </div>
+</section>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'core/js/home.js' %}"></script>
+{% endblock %}

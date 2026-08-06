@@ -1,0 +1,43 @@
+/* Forecast Engine */
+
+.forecast-value {
+    font-size: 2.2rem;
+    font-weight: 700;
+    font-family: var(--font-mono);
+    margin-bottom: var(--space-1);
+}
+
+.forecast-chart-card {
+    margin-top: var(--space-3);
+}
+
+.forecast-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-2);
+    height: 220px;
+    padding-top: var(--space-3);
+}
+
+.forecast-chart__bar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: center;
+    gap: var(--space-1);
+    height: 100%;
+}
+
+.forecast-chart__fill {
+    width: 100%;
+    max-width: 64px;
+    background: linear-gradient(180deg, var(--color-primary), var(--color-primary-hover));
+    border-radius: var(--radius) var(--radius) 0 0;
+    transition: height 0.5s ease;
+}
+
+.forecast-chart__label {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+}

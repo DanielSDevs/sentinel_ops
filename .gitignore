@@ -216,3 +216,8 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Uploads de usuários (mantém a estrutura de pastas via .gitkeep)
+media/**
+!media/**/
+!media/**/.gitkeep

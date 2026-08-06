@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}SentinelOps — Ops Monitor{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'monitor/css/monitor.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>🖥️ Ops Monitor</h1>
+    <p class="page-header__subtitle">
+        Resumo da operação em tempo real e visão corrente da saúde operacional.
+    </p>
+</div>
+
+<div class="grid grid--3">
+    <div class="card monitor-metric">
+        <p class="monitor-metric__value" data-metric="abertos">—</p>
+        <p class="card__subtitle">Incidentes abertos</p>
+    </div>
+    <div class="card monitor-metric">
+        <p class="monitor-metric__value" data-metric="criticos">—</p>
+        <p class="card__subtitle">Incidentes críticos (P1/P2)</p>
+    </div>
+    <div class="card monitor-metric">
+        <p class="monitor-metric__value" data-metric="sla">—</p>
+        <p class="card__subtitle">SLA em conformidade</p>
+    </div>
+</div>
+
+<div class="card">
+    <h2 class="card__title">Saúde dos serviços</h2>
+    <p class="card__subtitle">Dados simulados. A integração com Prometheus/Grafana será feita em sprints futuras.</p>
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Serviço</th>
+                    <th>Status</th>
+                    <th>Latência média</th>
+                    <th>Última verificação</th>
+                </tr>
+            </thead>
+            <tbody data-services-table>
+                <!-- Preenchido via monitor.js -->
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'monitor/js/monitor.js' %}"></script>
+{% endblock %}

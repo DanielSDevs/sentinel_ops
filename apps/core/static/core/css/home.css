@@ -1,0 +1,39 @@
+/* Página inicial (home) */
+
+.hero {
+    text-align: center;
+    padding: var(--space-5) 0;
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+.hero h1 {
+    font-size: 2.4rem;
+    background: linear-gradient(90deg, var(--color-primary), var(--color-success));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+}
+
+.hero__subtitle {
+    color: var(--color-text-muted);
+    font-size: 1.1rem;
+}
+
+.hero__actions {
+    display: flex;
+    justify-content: center;
+    gap: var(--space-3);
+}
+
+.module-card {
+    display: block;
+    color: var(--color-text);
+    transition: transform 0.15s ease, border-color 0.15s ease;
+}
+
+.module-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--color-primary);
+    color: var(--color-text);
+}

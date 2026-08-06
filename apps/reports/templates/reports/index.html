@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}SentinelOps — Reporting Hub{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'reports/css/reports.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📊 Reporting Hub</h1>
+    <p class="page-header__subtitle">
+        Reports diários e semanais com consolidação gerencial e executiva.
+    </p>
+</div>
+
+<div class="card">
+    <h2 class="card__title">Relatórios disponíveis</h2>
+    <p class="card__subtitle">Dados simulados. A geração real de relatórios será feita em sprints futuras.</p>
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr>
+                    <th>Relatório</th>
+                    <th>Período</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody data-reports-table>
+                <!-- Preenchido via reports.js -->
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'reports/js/reports.js' %}"></script>
+{% endblock %}

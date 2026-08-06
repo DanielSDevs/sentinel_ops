@@ -1,0 +1,38 @@
+/* Paleta e tokens de design do SentinelOps */
+:root {
+    /* Cores base (tema escuro de operações) */
+    --color-bg: #0d1117;
+    --color-surface: #161b22;
+    --color-surface-2: #1f2630;
+    --color-border: #2d333b;
+
+    --color-text: #e6edf3;
+    --color-text-muted: #8b949e;
+
+    /* Marca */
+    --color-primary: #2f81f7;
+    --color-primary-hover: #1f6feb;
+
+    /* Estados operacionais */
+    --color-success: #3fb950;
+    --color-warning: #d29922;
+    --color-danger: #f85149;
+    --color-info: #58a6ff;
+
+    /* Tipografia */
+    --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    --font-mono: ui-monospace, 'Cascadia Code', 'Fira Code', Consolas, monospace;
+
+    /* Espaçamento e forma */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 1rem;
+    --space-4: 1.5rem;
+    --space-5: 2.5rem;
+
+    --radius: 8px;
+    --radius-lg: 12px;
+    --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+
+    --container-width: 1200px;
+}

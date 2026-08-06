@@ -1,0 +1,35 @@
+/* Risk Alert Center */
+
+.alert-list {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+}
+
+.alert-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background-color: var(--color-surface-2);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius);
+    flex-wrap: wrap;
+}
+
+.alert-item__info {
+    display: flex;
+    flex-direction: column;
+}
+
+.alert-item__title {
+    font-weight: 600;
+}
+
+.alert-item__meta {
+    color: var(--color-text-muted);
+    font-size: 0.8rem;
+}

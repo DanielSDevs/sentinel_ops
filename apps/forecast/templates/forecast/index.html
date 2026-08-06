@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}SentinelOps — Forecast Engine{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'forecast/css/forecast.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>📈 Forecast Engine</h1>
+    <p class="page-header__subtitle">
+        Previsão de volume de incidentes para D+1 e D+7 e identificação de tendências futuras.
+    </p>
+</div>
+
+<div class="grid grid--3">
+    <div class="card">
+        <h2 class="card__title">Previsão D+1</h2>
+        <p class="forecast-value" data-forecast="d1">—</p>
+        <p class="card__subtitle">incidentes previstos para amanhã</p>
+    </div>
+    <div class="card">
+        <h2 class="card__title">Previsão D+7</h2>
+        <p class="forecast-value" data-forecast="d7">—</p>
+        <p class="card__subtitle">incidentes previstos para os próximos 7 dias</p>
+    </div>
+    <div class="card">
+        <h2 class="card__title">Tendência</h2>
+        <p class="forecast-value"><span class="badge badge--warning">Em alta</span></p>
+        <p class="card__subtitle">variação esperada em relação à semana anterior</p>
+    </div>
+</div>
+
+<div class="card forecast-chart-card">
+    <h2 class="card__title">Volume previsto — próximos 7 dias</h2>
+    <p class="card__subtitle">Dados simulados. A integração com os modelos preditivos (MLflow) será feita em sprints futuras.</p>
+    <div class="forecast-chart" data-forecast-chart></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'forecast/js/forecast.js' %}"></script>
+{% endblock %}
