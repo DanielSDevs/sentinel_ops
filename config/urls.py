@@ -13,6 +13,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('', include('apps.core.urls')),
     path('contas/', include('apps.accounts.urls')),
+    path('inteligencia/', include('apps.intelligence.urls')),
     path('forecast/', include('apps.forecast.urls')),
     path('monitor/', include('apps.monitor.urls')),
     path('alertas/', include('apps.alerts.urls')),

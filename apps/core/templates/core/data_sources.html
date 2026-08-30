@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load sentinel %}
+
+{% block title %}SentinelOps — Data Sources{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Data Sources</h1>
+    <p class="page-header__subtitle">
+        O que está carregado, qual a cobertura e — igualmente importante — o que a base
+        <strong>não</strong> contém.
+    </p>
+</div>
+
+{% if cobertura %}
+<section class="secao">
+    <div class="tiles">
+        <div class="tile">
+            <span class="tile__label">Incidentes carregados</span>
+            <span class="tile__valor">{{ cobertura.total }}</span>
+            <span class="tile__sub">LW-DATASET.xlsx</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Elegíveis a KPI</span>
+            <span class="tile__valor">{{ cobertura.elegiveis_kpi }}</span>
+            <span class="tile__sub">{{ cobertura.violacoes }} violações registradas</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Vínculos pai-filho</span>
+            <span class="tile__valor">{{ cobertura.com_pai }}</span>
+            <span class="tile__sub">base do Correlation Engine</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Janela temporal</span>
+            <span class="tile__valor" style="font-size:1.1rem">{{ cobertura.inicio|date:"d/m/y" }} → {{ cobertura.fim|date:"d/m/y" }}</span>
+            <span class="tile__sub">referência: {{ cobertura.referencia|date:"d/m/Y" }}</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Métricas materializadas</span>
+            <span class="tile__valor">{{ cobertura.linhas_metrica }}</span>
+            <span class="tile__sub">agregados diários pré-computados</span>
+        </div>
+        {% if cobertura.simulados %}
+        <div class="tile">
+            <span class="tile__label">Incidentes simulados</span>
+            <span class="tile__valor sev-warning">{{ cobertura.simulados }}</span>
+            <span class="tile__sub">injetados manualmente para demonstração</span>
+        </div>
+        {% endif %}
+    </div>
+</section>
+
+<section class="secao">
+    <div class="grid grid--2">
+        <div class="card">
+            <h2 class="card__title">Qualidade dos dados</h2>
+            <p class="card__subtitle">Campos incompletos no extrato e o efeito prático de cada lacuna.</p>
+            <div class="pilha" style="margin-top:var(--space-3)">
+                {% for q in qualidade %}
+                <div>
+                    <div class="risco__topo">
+                        <span class="risco__nome">{{ q.campo }}</span>
+                        <span class="risco__score sev-{% if q.pct > 50 %}warning{% else %}neutral{% endif %}">{{ q.pct }}%</span>
+                    </div>
+                    <div class="contrib__bar" style="margin:.4rem 0">
+                        <div class="contrib__fill" style="width:{{ q.pct }}%;background:var(--sev-warning)"></div>
+                    </div>
+                    <p class="tile__sub">{{ q.ausentes }} registros sem valor. {{ q.impacto }}</p>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="card__title">O que a base não contém</h2>
+            <p class="card__subtitle">
+                Limites deliberados de escopo. A plataforma não estima esses campos porque não há
+                dado que os sustente — inventá-los daria aparência de inteligência sem substância.
+            </p>
+            <div class="pilha" style="margin-top:var(--space-3)">
+                {% for campo, motivo in campos_ausentes %}
+                <div class="insight insight--attention">
+                    <div class="insight__campo">
+                        <span class="insight__rotulo">{{ campo }}</span>
+                        <span class="insight__texto">{{ motivo }}</span>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="card">
+        <h2 class="card__title">Como recarregar</h2>
+        <div class="explain__formula">python manage.py importar_dataset</div>
+        <p class="card__subtitle" style="margin-top:var(--space-2)">
+            Recria a base a partir do xlsx e materializa as métricas diárias. Use
+            <span class="mono">--manter-simulacoes</span> para preservar incidentes injetados manualmente.
+        </p>
+    </div>
+</section>
+{% else %}
+<p class="vazio">Nenhum dado carregado. Rode <span class="mono">python manage.py importar_dataset</span>.</p>
+{% endif %}
+{% endblock %}

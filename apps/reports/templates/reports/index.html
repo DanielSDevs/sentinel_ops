@@ -17,7 +17,7 @@
 
 <div class="card">
     <h2 class="card__title">Relatórios disponíveis</h2>
-    <p class="card__subtitle">Dados simulados. A geração real de relatórios será feita em sprints futuras.</p>
+    <p class="card__subtitle">Contagens calculadas a partir dos incidentes registrados. Exportação em PDF/Excel prevista para sprints futuras.</p>
     <div class="table-wrapper">
         <table class="table">
             <thead>
@@ -28,14 +28,17 @@
                     <th>Ações</th>
                 </tr>
             </thead>
-            <tbody data-reports-table>
-                <!-- Preenchido via reports.js -->
+            <tbody>
+                {% for relatorio in relatorios %}
+                <tr>
+                    <td>{{ relatorio.nome }}</td>
+                    <td>{{ relatorio.periodo }}</td>
+                    <td><span class="badge {{ relatorio.classe }}">{{ relatorio.status }}</span></td>
+                    <td><button type="button" class="btn btn--outline btn--sm" disabled title="Disponível em sprints futuras">Baixar</button></td>
+                </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
-{% endblock %}
-
-{% block extra_js %}
-    <script src="{% static 'reports/js/reports.js' %}"></script>
 {% endblock %}

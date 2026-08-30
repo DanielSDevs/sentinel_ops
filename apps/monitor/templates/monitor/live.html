@@ -1,0 +1,130 @@
+{% extends 'base.html' %}
+{% load sentinel %}
+
+{% block title %}SentinelOps — Live Operations{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Live Operations</h1>
+    <p class="page-header__subtitle">
+        Operação nas últimas {{ horas }} horas a partir da data de referência do dataset.
+    </p>
+</div>
+
+<section class="secao">
+    <div class="tiles">
+        <div class="tile">
+            <span class="tile__label">Incidentes ativos</span>
+            <span class="tile__valor">{{ metricas.ativos }}</span>
+            <span class="tile__sub">aguardando tratamento</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Elegíveis a KPI (7d)</span>
+            <span class="tile__valor">{{ metricas.total_kpi }}</span>
+            <span class="tile__sub">
+                {% if metricas.variacao_kpi is not None %}
+                <span class="{{ metricas.variacao_kpi|classe_variacao }}">{{ metricas.variacao_kpi }}% vs. período anterior</span>
+                {% endif %}
+            </span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Críticos P1/P2 (7d)</span>
+            <span class="tile__valor sev-warning">{{ metricas.criticos }}</span>
+            <span class="tile__sub">de {{ metricas.total_kpi }} elegíveis</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Conformidade de OLA</span>
+            <span class="tile__valor sev-healthy">{{ metricas.conformidade_ola }}%</span>
+            <span class="tile__sub">{{ metricas.violacoes }} violações em 7 dias</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Ruído de monitoramento</span>
+            <span class="tile__valor sev-neutral">{{ metricas.ruido_pct }}%</span>
+            <span class="tile__sub">do volume não entra no OLA</span>
+        </div>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="card">
+        <h2 class="card__title">Volume elegível — últimos 30 dias</h2>
+        <p class="card__subtitle">Estado por dia segundo o detector de anomalias.</p>
+        <div style="margin-top:var(--space-3)">{% timeline timeline %}</div>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="grid grid--2">
+        <div class="card">
+            <h2 class="card__title">Ativos com incidentes recorrentes (7d)</h2>
+            <p class="card__subtitle">Instabilidade repetida no mesmo item de configuração — costuma passar batida na fila.</p>
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead>
+                        <tr><th>Item de configuração</th><th>Produto</th><th>Sinal</th><th>Ocorrências</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for item in recorrentes %}
+                        <tr>
+                            <td class="mono">{{ item.item_configuracao__codigo }}</td>
+                            <td class="mono">{{ item.produto__codigo|default:"—" }}</td>
+                            <td>{{ item.familia_sinal__nome|default:"—" }}</td>
+                            <td class="num">{{ item.total }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="4">Nenhum ativo acima do limiar de recorrência.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="card__title">Simular cenário operacional</h2>
+            <p class="card__subtitle">
+                Injeta incidentes sintéticos (marcados como <span class="mono">simulação</span>) para ver a
+                plataforma reagir. O efeito se propaga para Health Score, Risk Radar e alertas.
+            </p>
+            <form method="post" action="{% url 'monitor:simular' %}" class="monitor-simulacao__form">
+                {% csrf_token %}
+                <button type="submit" name="cenario" value="pico" class="btn btn--outline">Simular pico</button>
+                <button type="submit" name="cenario" value="degradacao" class="btn btn--outline">Simular degradação</button>
+                <button type="submit" name="cenario" value="limpar" class="btn btn--outline">Limpar simulações</button>
+            </form>
+        </div>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">Fluxo de incidentes ({{ horas }}h)</h2>
+        <div class="linha-meta">
+            <a href="?horas=6">6h</a><a href="?horas=24">24h</a><a href="?horas=72">72h</a>
+        </div>
+    </div>
+    <div class="card">
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr><th>Número</th><th>Aberto</th><th>Prio</th><th>Produto</th><th>Equipe</th><th>Sinal</th><th>KPI</th></tr>
+                </thead>
+                <tbody>
+                    {% for inc in incidentes %}
+                    <tr>
+                        <td><a class="mono" href="{% url 'monitor:detalhe_incidente' inc.numero %}">{{ inc.numero }}</a></td>
+                        <td class="mono">{{ inc.aberto_em|date:"d/m H:i" }}</td>
+                        <td><span class="chip chip--{% if inc.prioridade <= 2 %}critical{% elif inc.prioridade == 3 %}warning{% else %}neutral{% endif %}">P{{ inc.prioridade }}</span></td>
+                        <td class="mono">{{ inc.produto.codigo|default:"—" }}</td>
+                        <td class="mono">{{ inc.equipe.nome }}</td>
+                        <td>{{ inc.familia_sinal.nome|default:"—" }}</td>
+                        <td>{% if inc.entrou_kpi %}<span class="chip chip--healthy">sim</span>{% else %}<span class="chip chip--neutral">ruído</span>{% endif %}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="7">Nenhum incidente na janela.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endblock %}

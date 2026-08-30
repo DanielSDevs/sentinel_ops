@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% load sentinel %}
+
+{% block title %}SentinelOps — Service Health{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Service Health Map</h1>
+    <p class="page-header__subtitle">
+        Saúde por produto, ordenada do pior para o melhor — quem precisa de atenção aparece primeiro.
+        Os códigos de produto são anonimizados pela Locaweb no dataset.
+    </p>
+</div>
+
+<details class="explain" style="margin-bottom:var(--space-4);border-top:none">
+    <summary>Como o health score de cada serviço é calculado</summary>
+    <div class="explain__corpo">
+        Mesmos princípios do Operational Health global, restritos ao produto para que a leitura seja
+        comparável entre as duas telas:
+        <div class="explain__formula">score = 100 − (violação_OLA × 45 + severidade × 30 + tendência × 25)</div>
+        Violação de OLA usa 60 dias de histórico; severidade e tendência usam os últimos 14 dias.
+        Produtos com menos de 5 incidentes no período não são pontuados.
+    </div>
+</details>
+
+<div class="grid grid--3">
+    {% for servico in servicos %}
+    <a class="card" href="{% url 'monitor:detalhe_servico' servico.produto %}" style="color:inherit">
+        <div class="risco__topo" style="margin-bottom:var(--space-2)">
+            <span class="chip chip--{{ servico.faixa }}">{{ servico.rotulo }}</span>
+            <span class="risco__score sev-{{ servico.faixa }}">{{ servico.score }}</span>
+        </div>
+
+        <h3 class="card__title mono" style="margin-bottom:var(--space-1)">{{ servico.produto }}</h3>
+
+        {% sparkline servico.sparkline servico.faixa|cor_severidade 200 36 %}
+
+        <div class="risco__medidas" style="margin-top:var(--space-2)">
+            <span class="risco__medida">Elegíveis <strong>{{ servico.total_kpi }}</strong></span>
+            <span class="risco__medida">Críticos <strong>{{ servico.criticos }}</strong></span>
+            <span class="risco__medida">Violação <strong>{{ servico.taxa_violacao }}%</strong></span>
+            <span class="risco__medida">MTTR <strong>{{ servico.mttr_min }} min</strong></span>
+        </div>
+
+        {% if servico.tendencia is not None %}
+        <div class="tile__sub" style="margin-top:var(--space-2)">
+            Tendência de volume:
+            <span class="{{ servico.tendencia|classe_variacao }}">{{ servico.tendencia }}%</span>
+        </div>
+        {% endif %}
+    </a>
+    {% empty %}
+    <p class="vazio">Nenhum produto com volume suficiente no período.</p>
+    {% endfor %}
+</div>
+{% endblock %}

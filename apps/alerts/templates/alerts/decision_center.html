@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load sentinel %}
+
+{% block title %}SentinelOps — Decision Center{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Decision Center</h1>
+    <p class="page-header__subtitle">
+        Fila única de ações, ordenada por prioridade calculada — não por ordem de chegada.
+        O objetivo é transformar insight em decisão.
+    </p>
+</div>
+
+<details class="explain" style="margin-bottom:var(--space-4);border-top:none">
+    <summary>Como a fila é ordenada</summary>
+    <div class="explain__corpo">
+        <div class="explain__formula">prioridade = impacto × urgência × confiança × alcance × 100</div>
+        Ações vindas do Risk Radar usam o próprio score de risco (probabilidade × impacto).
+        Ações duplicadas são consolidadas: se dois sinais levam à mesma recomendação, ela aparece
+        uma vez só, com a maior prioridade.
+        <p style="margin-top:var(--space-2)">
+            <strong>Sobre impacto financeiro:</strong> o extrato do ITSM não traz custo por serviço nem
+            valor de transação, então o impacto é expresso em termos operacionais — incidentes em risco,
+            exposição de OLA e equipes afetadas. Estimar reais aqui seria inventar número.
+        </p>
+    </div>
+</details>
+
+<div class="pilha">
+    {% for acao in acoes %}
+    <div class="insight insight--{{ acao.faixa }}">
+        <div class="insight__topo">
+            <span class="chip chip--{{ acao.faixa }}">P{{ forloop.counter }}</span>
+            <span class="insight__titulo">{{ acao.titulo }}</span>
+            <span class="insight__prio">
+                prioridade {{ acao.prioridade }}
+                {% if acao.confianca %} · confiança {{ acao.confianca }}%{% endif %}
+            </span>
+        </div>
+
+        <div class="insight__grid">
+            <div class="insight__campo">
+                <span class="insight__rotulo">Motivo</span>
+                <span class="insight__texto">{{ acao.motivo }}</span>
+            </div>
+            <div class="insight__campo">
+                <span class="insight__rotulo">Impacto operacional</span>
+                <span class="insight__texto">{{ acao.impacto }}</span>
+            </div>
+            <div class="insight__campo">
+                <span class="insight__rotulo">Evidência</span>
+                <span class="insight__texto mono" style="font-size:.75rem">{{ acao.evidencia }}</span>
+            </div>
+        </div>
+
+        <div class="linha-meta">
+            <span>Origem: {{ acao.origem }}</span>
+            {% if acao.link %}<a href="{% url acao.link %}">{{ acao.link_rotulo }} →</a>{% endif %}
+        </div>
+    </div>
+    {% empty %}
+    <p class="vazio">Nenhuma ação prioritária no momento.</p>
+    {% endfor %}
+</div>
+{% endblock %}

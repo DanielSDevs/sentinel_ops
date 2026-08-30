@@ -1,55 +1,67 @@
 {% extends 'base.html' %}
 {% load static %}
 
-{% block title %}SentinelOps — Home{% endblock %}
+{% block title %}SentinelOps — Visão Geral{% endblock %}
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'core/css/home.css' %}">
 {% endblock %}
 
 {% block content %}
-<section class="hero">
-    <h1>Inteligência preditiva para operações de TI</h1>
-    <p class="hero__subtitle">
-        O SentinelOps centraliza dados, modelos analíticos e funcionalidades operacionais
-        para gerar previsões (D+1 e D+7), identificar padrões e riscos e apoiar a tomada
-        de decisão em tempo real.
+<div class="page-header">
+    <h1>Visão Geral da Operação</h1>
+    <p class="page-header__subtitle">
+        Painel interno da equipe de operações Locaweb — previsão de incidentes, saúde dos
+        serviços e alertas de risco operacional em um só lugar.
     </p>
-    {% if not user.is_authenticated %}
-        <div class="hero__actions">
-            <a class="btn btn--primary" href="{% url 'accounts:register' %}">Começar agora</a>
-            <a class="btn btn--outline" href="{% url 'core:sobre' %}">Saiba mais</a>
-        </div>
-    {% endif %}
-</section>
+</div>
+
+<div class="grid grid--3">
+    <div class="card overview-metric">
+        <span class="icon-chip icon-chip--info">📂</span>
+        <p class="monitor-metric__value">{{ metricas.abertos }}</p>
+        <p class="card__subtitle">Incidentes ativos</p>
+    </div>
+    <div class="card overview-metric">
+        <span class="icon-chip icon-chip--danger">🔥</span>
+        <p class="monitor-metric__value">{{ metricas.criticos }}</p>
+        <p class="card__subtitle">Incidentes críticos (P1/P2)</p>
+    </div>
+    <div class="card overview-metric">
+        <span class="icon-chip icon-chip--warning">📈</span>
+        <p class="monitor-metric__value">{{ tendencia_pct }}%</p>
+        <p class="card__subtitle">Tendência de volume elegível a KPI (7 dias)</p>
+    </div>
+    <div class="card overview-metric">
+        <span class="icon-chip icon-chip--info">🔍</span>
+        <p class="monitor-metric__value">{{ ruido_sinal_hoje.pct_ruido }}%</p>
+        <p class="card__subtitle">do volume de hoje é ruído de monitoramento</p>
+    </div>
+</div>
 
 <section>
-    <h2>Módulos da plataforma</h2>
+    <h2>Módulos</h2>
     <div class="grid grid--3">
         <a class="card module-card" href="{% url 'forecast:index' %}">
             <h3 class="card__title">📈 Forecast Engine</h3>
-            <p class="card__subtitle">Previsões D+1 e D+7 de volume de incidentes e tendências futuras.</p>
+            <p class="card__subtitle">Previsão de volume de incidentes D+1 e D+7 e tendências por categoria.</p>
         </a>
         <a class="card module-card" href="{% url 'monitor:index' %}">
             <h3 class="card__title">🖥️ Ops Monitor</h3>
-            <p class="card__subtitle">Resumo da operação em tempo real e visão corrente da saúde operacional.</p>
+            <p class="card__subtitle">Saúde dos serviços, criticidade P1/P2 e conformidade de OLA em tempo real.</p>
         </a>
         <a class="card module-card" href="{% url 'alerts:index' %}">
             <h3 class="card__title">🚨 Risk Alert Center</h3>
-            <p class="card__subtitle">Notificações sobre risco operacional e alertas preventivos.</p>
+            <p class="card__subtitle">Alertas preventivos de risco operacional e violação de OLA.</p>
         </a>
         <a class="card module-card" href="{% url 'copilot:index' %}">
             <h3 class="card__title">🤖 Agent Copilot</h3>
-            <p class="card__subtitle">Chatbot com resumos específicos e respostas rápidas contextualizadas.</p>
+            <p class="card__subtitle">Resumos rápidos e respostas contextualizadas sobre a operação.</p>
         </a>
         <a class="card module-card" href="{% url 'reports:index' %}">
             <h3 class="card__title">📊 Reporting Hub</h3>
-            <p class="card__subtitle">Reports diários e semanais com consolidação gerencial e executiva.</p>
+            <p class="card__subtitle">Reports diários e semanais com consolidação gerencial.</p>
         </a>
     </div>
 </section>
-{% endblock %}
-
-{% block extra_js %}
-    <script src="{% static 'core/js/home.js' %}"></script>
 {% endblock %}

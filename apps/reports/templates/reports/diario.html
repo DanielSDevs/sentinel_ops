@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load sentinel %}
+
+{% block title %}SentinelOps — Daily Report{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Daily Operational Report</h1>
+    <p class="page-header__subtitle">
+        Fechamento do dia {{ data_referencia|date:"d/m/Y" }} — o que aconteceu, o que mudou e o que
+        fica pendente para amanhã.
+    </p>
+</div>
+
+<section class="secao">
+    <div class="card">
+        <h2 class="card__title">Resumo do dia</h2>
+        <p class="briefing__texto">{{ briefing.por_que_importa }}</p>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Indicadores do dia</h2></div>
+    <div class="tiles">
+        <div class="tile">
+            <span class="tile__label">Incidentes no dia</span>
+            <span class="tile__valor">{{ metricas.total }}</span>
+            <span class="tile__sub">{{ metricas.total_kpi }} elegíveis a KPI</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Críticos P1/P2</span>
+            <span class="tile__valor sev-warning">{{ metricas.criticos }}</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Conformidade de OLA</span>
+            <span class="tile__valor sev-healthy">{{ metricas.conformidade_ola }}%</span>
+            <span class="tile__sub">{{ metricas.violacoes }} violações</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">MTTR</span>
+            <span class="tile__valor">{{ metricas.mttr_min }} min</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Ruído de monitoramento</span>
+            <span class="tile__valor sev-neutral">{{ metricas.ruido_pct }}%</span>
+        </div>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Mudanças relevantes</h2></div>
+    <div class="card">
+        <ul class="briefing__lista">
+            {% for item in briefing.o_que_mudou %}
+            <li class="briefing__item briefing__item--{{ item.sentimento }}">
+                <span class="briefing__seta">{{ item.seta }}</span><span>{{ item.texto }}</span>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Principais incidentes do dia</h2></div>
+    <div class="card">
+        <div class="table-wrapper">
+            <table class="table">
+                <thead><tr><th>Número</th><th>Hora</th><th>Prio</th><th>Descrição</th><th>Produto</th></tr></thead>
+                <tbody>
+                    {% for inc in incidentes %}
+                    <tr>
+                        <td><a class="mono" href="{% url 'monitor:detalhe_incidente' inc.numero %}">{{ inc.numero }}</a></td>
+                        <td class="mono">{{ inc.aberto_em|date:"H:i" }}</td>
+                        <td><span class="chip chip--{% if inc.prioridade <= 2 %}critical{% elif inc.prioridade == 3 %}warning{% else %}neutral{% endif %}">P{{ inc.prioridade }}</span></td>
+                        <td>{{ inc.descricao|truncatechars:64 }}</td>
+                        <td class="mono">{{ inc.produto.codigo|default:"—" }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5">Nenhum incidente registrado na janela.</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Previsão para amanhã</h2></div>
+    <div class="card"><p class="briefing__texto">{{ interpretacao }}</p></div>
+</section>
+{% endblock %}

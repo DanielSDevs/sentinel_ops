@@ -1,0 +1,23 @@
+<div class="risco risco--{{ risco.faixa }}">
+    <div class="risco__topo">
+        <span class="chip chip--{{ risco.faixa }}">{{ risco.rotulo_faixa }}</span>
+        <span class="risco__nome">{{ risco.chave }}</span>
+        <span class="risco__score sev-{{ risco.faixa }}">{{ risco.score }}</span>
+    </div>
+
+    <div class="risco__medidas">
+        <span class="risco__medida">Probabilidade de violação <strong>{{ risco.probabilidade|floatformat:3 }}</strong></span>
+        <span class="risco__medida">Impacto relativo <strong>{{ risco.impacto|floatformat:2 }}</strong></span>
+        <span class="risco__medida">Elegíveis (14d) <strong>{{ risco.volume_kpi }}</strong></span>
+        <span class="risco__medida">Críticos (14d) <strong>{{ risco.criticos }}</strong></span>
+        <span class="risco__medida">Violações (90d) <strong>{{ risco.violacoes }}</strong></span>
+    </div>
+
+    {% if risco.drivers %}
+    <ul class="risco__drivers">
+        {% for driver in risco.drivers %}<li>{{ driver }}</li>{% endfor %}
+    </ul>
+    {% endif %}
+
+    <div class="risco__acao"><strong>Ação sugerida:</strong> {{ risco.acao }}</div>
+</div>

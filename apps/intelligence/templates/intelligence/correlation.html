@@ -1,0 +1,97 @@
+{% extends 'base.html' %}
+{% load sentinel %}
+
+{% block title %}SentinelOps — Correlation Engine{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Correlation Engine</h1>
+    <p class="page-header__subtitle">
+        Relações entre eventos extraídas de duas evidências reais do ITSM: o vínculo
+        <span class="mono">Incidente Pai</span> registrado pela própria operação e a co-ocorrência
+        temporal de sintomas no mesmo ativo.
+    </p>
+</div>
+
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">Blast radius — maiores tempestades de incidentes</h2>
+    </div>
+    <p class="card__subtitle" style="margin-bottom:var(--space-3)">
+        Incidentes-raiz que geraram o maior número de desdobramentos. O vínculo pai-filho é
+        preenchido pela operação no ITSM, então é a evidência de causalidade mais forte da base.
+    </p>
+
+    <div class="pilha">
+        {% for tempestade in tempestades %}
+        <div class="card">
+            <div class="risco__topo" style="margin-bottom:var(--space-2)">
+                <span class="chip chip--critical">{{ tempestade.total_filhos }} desdobramentos</span>
+                <span class="risco__nome">{{ tempestade.pai.numero }}</span>
+                <span class="insight__prio">
+                    {{ tempestade.inicio|date:"d/m/Y H:i" }}
+                    {% if tempestade.duracao_horas %}· janela de {{ tempestade.duracao_horas }}h{% endif %}
+                </span>
+            </div>
+
+            <p class="insight__texto">{{ tempestade.pai.descricao|truncatechars:160 }}</p>
+
+            {% grafo_blast tempestade %}
+
+            <div class="insight__grid" style="margin-top:var(--space-2)">
+                <div class="insight__campo">
+                    <span class="insight__rotulo">Produtos atingidos</span>
+                    <span class="insight__texto mono">
+                        {% for nome, n in tempestade.produtos %}{{ nome }} ({{ n }}){% if not forloop.last %} · {% endif %}{% empty %}—{% endfor %}
+                    </span>
+                </div>
+                <div class="insight__campo">
+                    <span class="insight__rotulo">Equipes envolvidas</span>
+                    <span class="insight__texto mono">
+                        {% for nome, n in tempestade.equipes %}{{ nome }} ({{ n }}){% if not forloop.last %} · {% endif %}{% empty %}—{% endfor %}
+                    </span>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p class="vazio">Nenhum incidente com desdobramentos registrados.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">Cadeias de sintomas mais frequentes</h2>
+    </div>
+    <div class="card">
+        <p class="card__subtitle">
+            Pares de famílias de sinal que ocorrem em sequência no <strong>mesmo item de configuração</strong>
+            dentro de 60 minutos. Revela encadeamentos técnicos recorrentes na infraestrutura.
+        </p>
+        <div class="cadeia" style="margin-top:var(--space-3)">
+            {% for cadeia in cadeias %}
+            <div class="cadeia__item">
+                <span class="cadeia__de">{{ cadeia.de }}</span>
+                <span class="cadeia__seta">→</span>
+                <span class="cadeia__para">{{ cadeia.para }}</span>
+                <span class="cadeia__n">{{ cadeia.ocorrencias }}× · {{ cadeia.participacao }}% dos pares</span>
+            </div>
+            {% empty %}
+            <p class="vazio">Sem co-ocorrências suficientes na janela analisada.</p>
+            {% endfor %}
+        </div>
+
+        <details class="explain">
+            <summary>Como calculamos e o que isso não prova</summary>
+            <div class="explain__corpo">
+                Para cada ativo, percorremos os incidentes em ordem cronológica e contamos quantas vezes
+                a família B aparece até 60 minutos depois da família A.
+                <div class="explain__formula">participação = ocorrências_do_par ÷ total_de_pares_observados</div>
+                <strong>Importante:</strong> isso é correlação temporal, não causalidade. Duas famílias
+                podem disparar juntas por uma terceira causa comum. Use como ponto de partida de
+                investigação, não como diagnóstico.
+            </div>
+        </details>
+    </div>
+</section>
+{% endblock %}

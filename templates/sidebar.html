@@ -1,0 +1,86 @@
+{% load static %}
+<aside class="sidebar" data-sidebar>
+    <div class="sidebar__brand">
+        <img src="{% static 'img/favicon.svg' %}" alt="" class="sidebar__logo">
+        <span>Sentinel<span class="sidebar__brand-accent">Ops</span></span>
+    </div>
+
+    <nav class="sidebar__nav">
+        <a class="sidebar__link" href="{% url 'core:home' %}">
+            <span class="sidebar__icon">◎</span> Command Center
+        </a>
+
+        <span class="sidebar__grupo">Monitor</span>
+        <a class="sidebar__link" href="{% url 'monitor:live' %}">
+            <span class="sidebar__icon">◈</span> Live Operations
+        </a>
+        <a class="sidebar__link" href="{% url 'monitor:saude' %}">
+            <span class="sidebar__icon">◧</span> Service Health
+        </a>
+        <a class="sidebar__link" href="{% url 'monitor:incidentes' %}">
+            <span class="sidebar__icon">◇</span> Incident Intelligence
+        </a>
+
+        <span class="sidebar__grupo">Intelligence</span>
+        <a class="sidebar__link" href="{% url 'forecast:index' %}">
+            <span class="sidebar__icon">◔</span> Forecast Engine
+        </a>
+        <a class="sidebar__link" href="{% url 'intelligence:risk' %}">
+            <span class="sidebar__icon">◉</span> Risk Radar
+        </a>
+        <a class="sidebar__link" href="{% url 'intelligence:anomaly' %}">
+            <span class="sidebar__icon">◬</span> Anomaly Detection
+        </a>
+        <a class="sidebar__link" href="{% url 'intelligence:correlation' %}">
+            <span class="sidebar__icon">⌘</span> Correlation Engine
+        </a>
+        <a class="sidebar__link" href="{% url 'intelligence:insights' %}">
+            <span class="sidebar__icon">✦</span> Operational Insights
+        </a>
+
+        <span class="sidebar__grupo">Action</span>
+        <a class="sidebar__link" href="{% url 'alerts:decisao' %}">
+            <span class="sidebar__icon">▶</span> Decision Center
+        </a>
+        <a class="sidebar__link" href="{% url 'alerts:index' %}">
+            <span class="sidebar__icon">◭</span> Alert Center
+        </a>
+
+        <span class="sidebar__grupo">AI</span>
+        <a class="sidebar__link" href="{% url 'copilot:index' %}">
+            <span class="sidebar__icon">✧</span> Sentinel Copilot
+        </a>
+
+        <span class="sidebar__grupo">Reports</span>
+        <a class="sidebar__link" href="{% url 'reports:diario' %}">
+            <span class="sidebar__icon">▤</span> Daily Report
+        </a>
+        <a class="sidebar__link" href="{% url 'reports:executivo' %}">
+            <span class="sidebar__icon">▦</span> Executive Report
+        </a>
+
+        <span class="sidebar__grupo">System</span>
+        <a class="sidebar__link" href="{% url 'core:dados' %}">
+            <span class="sidebar__icon">▣</span> Data Sources
+        </a>
+        <a class="sidebar__link" href="{% url 'forecast:modelo' %}">
+            <span class="sidebar__icon">◫</span> Model Performance
+        </a>
+    </nav>
+
+    <div class="sidebar__footer">
+        {% if user.is_authenticated %}
+            <div class="sidebar__user">
+                <span class="sidebar__avatar">{{ user.username|slice:":1"|upper }}</span>
+                <span class="sidebar__username">{{ user.username }}</span>
+            </div>
+            <form action="{% url 'accounts:logout' %}" method="post">
+                {% csrf_token %}
+                <button type="submit" class="btn btn--outline btn--sm sidebar__logout">Sair</button>
+            </form>
+        {% else %}
+            <a class="btn btn--outline btn--sm sidebar__logout" href="{% url 'accounts:login' %}">Entrar</a>
+        {% endif %}
+    </div>
+</aside>
+<div class="sidebar__scrim" data-sidebar-scrim></div>

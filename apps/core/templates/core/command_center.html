@@ -1,0 +1,235 @@
+{% extends 'base.html' %}
+{% load static sentinel %}
+
+{% block title %}SentinelOps — Command Center{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Command Center</h1>
+    <p class="page-header__subtitle">
+        Estado da operação, o que mudou desde o período anterior e o que exige decisão agora.
+    </p>
+</div>
+
+<!-- ============ SAÚDE + BRIEFING ============ -->
+<section class="secao">
+    <div class="grid grid--2" style="grid-template-columns: minmax(300px, 0.85fr) minmax(320px, 1.4fr)">
+        <div class="card">
+            <h2 class="card__title">Operational Health</h2>
+            <div class="dial">
+                {% dial saude.score saude.faixa %}
+                <div class="dial__info">
+                    <div class="dial__status sev-{{ saude.faixa }}">{{ saude.rotulo }}</div>
+                    <div class="dial__delta">
+                        {% if saude.variacao is not None %}
+                            {% if saude.variacao < 0 %}↓{% elif saude.variacao > 0 %}↑{% else %}→{% endif %}
+                            {{ saude.variacao }} pts vs. período anterior
+                        {% else %}
+                            sem base de comparação
+                        {% endif %}
+                    </div>
+                    {% if saude.principal_ofensor %}
+                    <div class="dial__ofensor">
+                        Maior perda: <strong>{{ saude.principal_ofensor.nome }}</strong>,
+                        −{{ saude.principal_ofensor.pontos_perdidos }} pts.
+                        {{ saude.principal_ofensor.explicacao }}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="contrib">
+                {% for fator in saude.fatores_ordenados %}
+                <div class="contrib__row">
+                    <div>
+                        <div class="contrib__nome">{{ fator.nome }}</div>
+                        <div class="contrib__valor">{{ fator.valor_exibido }}</div>
+                    </div>
+                    {% barra_contribuicao fator.pontos_perdidos fator.peso %}
+                    <div class="contrib__pts">−{{ fator.pontos_perdidos }} / {{ fator.peso }}</div>
+                </div>
+                {% endfor %}
+            </div>
+
+            <details class="explain">
+                <summary>Como calculamos</summary>
+                <div class="explain__corpo">
+                    O score parte de 100 e desconta a penalidade de cada fator, ponderada pelo seu peso.
+                    Cada penalidade vai de 0 (saudável) a 1 (pior caso).
+                    <div class="explain__formula">score = 100 − Σ (penalidade × peso)</div>
+                    <ul style="margin-top:var(--space-2);padding-left:1.1rem">
+                        {% for fator in saude.fatores %}
+                        <li style="margin-bottom:.35rem">
+                            <strong>{{ fator.nome }}</strong> (peso {{ fator.peso }}) — {{ fator.explicacao }}
+                            <br><span class="mono">{{ fator.detalhe_calculo }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                    Janela de {{ saude.janela_dias }} dias a partir da data de referência do dataset.
+                </div>
+            </details>
+        </div>
+
+        <div class="card">
+            <h2 class="card__title">AI Operational Briefing</h2>
+            <p class="card__subtitle">{{ briefing.resumo }}</p>
+
+            <div class="briefing" style="margin-top:var(--space-3)">
+                <div class="briefing__bloco">
+                    <h3>O que mudou</h3>
+                    <ul class="briefing__lista">
+                        {% for item in briefing.o_que_mudou %}
+                        <li class="briefing__item briefing__item--{{ item.sentimento }}">
+                            <span class="briefing__seta">{{ item.seta }}</span>
+                            <span>{{ item.texto }}</span>
+                        </li>
+                        {% endfor %}
+                    </ul>
+                </div>
+
+                <div class="briefing__bloco">
+                    <h3>Por que importa</h3>
+                    <p class="briefing__texto">{{ briefing.por_que_importa }}</p>
+                </div>
+
+                <div class="briefing__bloco">
+                    <h3>Ação recomendada</h3>
+                    <div class="pilha">
+                        {% for acao in briefing.acoes %}
+                        <div class="briefing__acao">
+                            <span class="briefing__acao-ordem">{{ forloop.counter }}</span>
+                            <div>
+                                <div>{{ acao.texto }}</div>
+                                <div class="card__subtitle" style="font-size:.74rem;margin-top:.2rem">{{ acao.motivo }}</div>
+                            </div>
+                        </div>
+                        {% empty %}
+                        <p class="card__subtitle">Nenhuma ação prioritária no momento.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <details class="explain">
+                <summary>Como este briefing é gerado</summary>
+                <div class="explain__corpo">
+                    Não há texto pré-escrito: cada frase é montada a partir dos valores calculados sobre
+                    a base (deltas período a período, decomposição do Health Score e ranking de risco).
+                    Se um número muda, a frase muda junto.
+                </div>
+            </details>
+        </div>
+    </div>
+</section>
+
+<!-- ============ WHAT CHANGED ============ -->
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">O que mudou nos últimos 7 dias</h2>
+    </div>
+    <div class="tiles">
+        {% for delta in deltas %}
+        <div class="tile">
+            <span class="tile__label">{{ delta.rotulo }}</span>
+            <span class="tile__valor">{{ delta.valor_atual }}</span>
+            <span class="tile__sub">
+                {% if delta.variacao is not None %}
+                    <span class="{% if delta.sentimento == 'ruim' %}sev-critical{% elif delta.sentimento == 'bom' %}sev-healthy{% else %}sev-neutral{% endif %}">
+                        {{ delta.seta }} {{ delta.variacao }}%
+                    </span>
+                {% else %}
+                    <span class="sev-neutral">sem comparação</span>
+                {% endif %}
+            </span>
+            <span class="tile__sub">{{ delta.explicacao }}</span>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- ============ RISCOS + PREVISÃO ============ -->
+<section class="secao">
+    <div class="grid grid--2">
+        <div class="card">
+            <div class="secao__cabecalho" style="margin-bottom:var(--space-2)">
+                <h2 class="card__title" style="margin:0">Principais riscos</h2>
+                <a class="secao__acao" href="{% url 'intelligence:risk' %}">Abrir Risk Radar →</a>
+            </div>
+            <p class="card__subtitle">Ordenados por probabilidade × impacto, não por volume.</p>
+            <div class="pilha" style="margin-top:var(--space-3)">
+                {% for risco in riscos %}
+                <div class="risco risco--{{ risco.faixa }}">
+                    <div class="risco__topo">
+                        <span class="chip chip--{{ risco.faixa }}">{{ risco.rotulo_faixa }}</span>
+                        <span class="risco__nome">{{ risco.chave }}</span>
+                        <span class="risco__score sev-{{ risco.faixa }}">{{ risco.score }}</span>
+                    </div>
+                    <div class="risco__medidas">
+                        <span class="risco__medida">Probabilidade <strong>{{ risco.probabilidade|floatformat:3 }}</strong></span>
+                        <span class="risco__medida">Elegíveis (14d) <strong>{{ risco.volume_kpi }}</strong></span>
+                        <span class="risco__medida">Violações (90d) <strong>{{ risco.violacoes }}</strong></span>
+                    </div>
+                </div>
+                {% empty %}
+                <p class="vazio">Nenhum produto acima do limiar de risco.</p>
+                {% endfor %}
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="secao__cabecalho" style="margin-bottom:var(--space-2)">
+                <h2 class="card__title" style="margin:0">Previsão operacional</h2>
+                <a class="secao__acao" href="{% url 'forecast:index' %}">Abrir Forecast →</a>
+            </div>
+            {% if previsao %}
+            <div class="tiles" style="grid-template-columns:1fr 1fr">
+                <div class="tile">
+                    <span class="tile__label">D+1 · {{ previsao.d1.dia_semana }}</span>
+                    <span class="tile__valor">{{ previsao.d1.valor }}</span>
+                    <span class="tile__sub">faixa {{ previsao.d1.minimo }}–{{ previsao.d1.maximo }}</span>
+                </div>
+                <div class="tile">
+                    <span class="tile__label">D+7 acumulado</span>
+                    <span class="tile__valor">{{ previsao.d7_total }}</span>
+                    <span class="tile__sub">faixa {{ previsao.d7_min }}–{{ previsao.d7_max }}</span>
+                </div>
+            </div>
+            <p class="briefing__texto" style="margin-top:var(--space-3)">{{ interpretacao_previsao }}</p>
+            {% else %}
+            <p class="vazio">Histórico insuficiente para gerar previsão.</p>
+            {% endif %}
+        </div>
+    </div>
+</section>
+
+<!-- ============ AÇÕES ============ -->
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">Ações prioritárias</h2>
+        <a class="secao__acao" href="{% url 'alerts:decisao' %}">Abrir Decision Center →</a>
+    </div>
+    <div class="pilha">
+        {% for acao in acoes %}
+        <div class="insight insight--{{ acao.faixa }}">
+            <div class="insight__topo">
+                <span class="chip chip--{{ acao.faixa }}">P{{ forloop.counter }}</span>
+                <span class="insight__titulo">{{ acao.titulo }}</span>
+                <span class="insight__prio">prioridade {{ acao.prioridade }}</span>
+            </div>
+            <div class="insight__grid">
+                <div class="insight__campo">
+                    <span class="insight__rotulo">Por quê</span>
+                    <span class="insight__texto">{{ acao.motivo }}</span>
+                </div>
+                <div class="insight__campo">
+                    <span class="insight__rotulo">Impacto</span>
+                    <span class="insight__texto">{{ acao.impacto }}</span>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <p class="vazio">Nenhuma ação prioritária identificada.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

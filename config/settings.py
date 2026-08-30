@@ -40,6 +40,7 @@ INSTALLED_APPS = [
     # Apps do SentinelOps
     'apps.core',
     'apps.accounts',
+    'apps.intelligence',
     'apps.forecast',
     'apps.monitor',
     'apps.alerts',
@@ -69,6 +70,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'apps.core.context_processors.referencia',
             ],
         },
     },

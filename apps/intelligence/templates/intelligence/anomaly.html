@@ -1,0 +1,91 @@
+{% extends 'base.html' %}
+{% load sentinel %}
+
+{% block title %}SentinelOps — Anomaly Detection{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Anomaly Detection</h1>
+    <p class="page-header__subtitle">
+        Cada série é comparada com a <strong>própria baseline</strong>: 40 incidentes/dia pode ser rotina
+        para um produto e um desvio grave para outro. Toda anomalia mostra o esperado, o observado e o desvio.
+    </p>
+</div>
+
+<section class="secao">
+    <div class="card">
+        <h2 class="card__title">Linha do tempo — volume elegível a KPI</h2>
+        <p class="card__subtitle">Últimos 30 dias. Cinza = normal · âmbar = atenção (z≥2) · vermelho = anomalia (z≥3).</p>
+        <div style="margin-top:var(--space-3)">
+            {% timeline timeline_global %}
+        </div>
+
+        <details class="explain">
+            <summary>Como detectamos</summary>
+            <div class="explain__corpo">
+                Para cada dia calculamos o z-score contra os 21 dias anteriores da mesma série:
+                <div class="explain__formula">z = (observado − média_baseline) ÷ desvio_padrão_baseline</div>
+                A confiança vem do próprio z-score pela regra empírica da distribuição normal
+                (z=2 → ~95%, z=3 → ~99,7%), limitada a 99% — não é um número arbitrado.
+            </div>
+        </details>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">Anomalias detectadas</h2>
+        <div class="linha-meta">
+            {% for valor, rotulo in dimensoes %}
+            <a href="?dim={{ valor }}" class="{% if dimensao == valor %}sev-critical{% endif %}">{{ rotulo }}</a>
+            {% endfor %}
+        </div>
+    </div>
+
+    <div class="pilha">
+        {% for anomalia in anomalias %}
+        <div class="insight insight--{{ anomalia.faixa }}">
+            <div class="insight__topo">
+                <span class="chip chip--{{ anomalia.faixa }}">{{ anomalia.rotulo }}</span>
+                <span class="insight__titulo">{{ anomalia.nome_exibicao|default:anomalia.chave }}</span>
+                <span class="insight__prio">{{ anomalia.data|date:"d/m/Y" }} · confiança {{ anomalia.confianca }}%</span>
+            </div>
+
+            <div class="insight__grid">
+                <div class="insight__campo">
+                    <span class="insight__rotulo">Comportamento normal</span>
+                    <span class="insight__texto num">{{ anomalia.esperado_min }}–{{ anomalia.esperado_max }} por dia</span>
+                </div>
+                <div class="insight__campo">
+                    <span class="insight__rotulo">Comportamento observado</span>
+                    <span class="insight__texto num sev-{{ anomalia.faixa }}">{{ anomalia.observado }}</span>
+                </div>
+                <div class="insight__campo">
+                    <span class="insight__rotulo">Desvio</span>
+                    <span class="insight__texto num">{{ anomalia.desvio_pct }}% &nbsp;(z={{ anomalia.z }})</span>
+                </div>
+            </div>
+
+            {% if anomalia.correlacoes %}
+            <div class="insight__campo">
+                <span class="insight__rotulo">Sinais que desviaram no mesmo dia</span>
+                <div class="cadeia" style="margin-top:var(--space-1)">
+                    {% for correlacao in anomalia.correlacoes %}
+                    <div class="cadeia__item">
+                        <span class="cadeia__de">{{ correlacao.nome }}</span>
+                        <span class="cadeia__n">{{ correlacao.valor }} ocorrências · z={{ correlacao.z }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+                <p class="card__subtitle" style="font-size:.74rem;margin-top:var(--space-2)">
+                    Co-ocorrência temporal — é uma pista de investigação, não uma relação causal comprovada.
+                </p>
+            </div>
+            {% endif %}
+        </div>
+        {% empty %}
+        <p class="vazio">Nenhuma anomalia acima do limiar nesta dimensão.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

@@ -11,19 +11,28 @@
 <div class="page-header">
     <h1>🚨 Risk Alert Center</h1>
     <p class="page-header__subtitle">
-        Alertas preventivos e notificações sobre risco operacional.
+        Alertas derivados em tempo real do estado operacional: serviços degradados, risco de
+        violação de OLA e tendência de alta no volume de incidentes.
     </p>
 </div>
 
 <div class="card">
     <h2 class="card__title">Alertas ativos</h2>
-    <p class="card__subtitle">Dados simulados. O disparo real de alertas (Celery/Redis) será feito em sprints futuras.</p>
-    <ul class="alert-list" data-alert-list>
-        <!-- Preenchido via alerts.js -->
+    <p class="card__subtitle">{{ alertas|length }} alerta{{ alertas|length|pluralize }} no momento.</p>
+    {% if alertas %}
+    <ul class="alert-list">
+        {% for alerta in alertas %}
+        <li class="alert-item {{ alerta.item_classe }}">
+            <div class="alert-item__info">
+                <span class="alert-item__title">{{ alerta.titulo }}</span>
+                <span class="alert-item__meta">{{ alerta.origem }} &middot; {{ alerta.quando|date:"d/m/Y, H:i" }}</span>
+            </div>
+            <span class="badge {{ alerta.badge_classe }}">{{ alerta.nivel }}</span>
+        </li>
+        {% endfor %}
     </ul>
+    {% else %}
+    <p class="card__subtitle">Nenhum alerta ativo — operação dentro da normalidade.</p>
+    {% endif %}
 </div>
-{% endblock %}
-
-{% block extra_js %}
-    <script src="{% static 'alerts/js/alerts.js' %}"></script>
 {% endblock %}

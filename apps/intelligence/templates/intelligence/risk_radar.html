@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+{% load sentinel %}
+
+{% block title %}SentinelOps — Risk Radar{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Risk Radar</h1>
+    <p class="page-header__subtitle">
+        Riscos operacionais ordenados por <strong>probabilidade × impacto</strong> — não por volume.
+        Um produto com muitos chamados de baixa severidade e OLA saudável representa menos risco que
+        um com poucos chamados e histórico de violação.
+    </p>
+</div>
+
+<details class="explain" style="margin-bottom:var(--space-4);border-top:none">
+    <summary>Como o score é calculado</summary>
+    <div class="explain__corpo">
+        <div class="explain__formula">risco = probabilidade × 6 + impacto × 0,5 &nbsp;(limitado a 100)</div>
+        <ul style="margin-top:var(--space-2);padding-left:1.1rem">
+            <li><strong>Probabilidade</strong> — taxa histórica de violação de OLA da entidade nos últimos 90 dias
+                (campos <span class="mono">Entrou para KPI?</span> e <span class="mono">KPI Violado?</span>).</li>
+            <li><strong>Impacto</strong> — volume elegível dos últimos 14 dias normalizado pelo maior da dimensão,
+                ponderado pela participação de P1/P2.</li>
+        </ul>
+        Entidades com menos de 20 incidentes elegíveis em 90 dias ficam de fora: a amostra é pequena
+        demais para estimar probabilidade com honestidade.
+    </div>
+</details>
+
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Por produto</h2></div>
+    <div class="pilha">
+        {% for risco in panorama.produtos %}
+        {% include 'intelligence/_risco.html' with risco=risco %}
+        {% empty %}
+        <p class="vazio">Nenhum produto com volume suficiente para avaliação de risco.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Por equipe</h2></div>
+    <div class="pilha">
+        {% for risco in panorama.equipes %}
+        {% include 'intelligence/_risco.html' with risco=risco %}
+        {% empty %}
+        <p class="vazio">Nenhuma equipe com volume suficiente para avaliação de risco.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Por família de sinal</h2></div>
+    <div class="pilha">
+        {% for risco in panorama.familias %}
+        {% include 'intelligence/_risco.html' with risco=risco %}
+        {% empty %}
+        <p class="vazio">Nenhuma família de sinal com volume suficiente.</p>
+        {% endfor %}
+    </div>
+</section>
+{% endblock %}

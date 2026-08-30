@@ -32,6 +32,15 @@ document.addEventListener('DOMContentLoaded', () => {
         mensagens.scrollTop = mensagens.scrollHeight;
     }
 
+    function mostrarDigitando() {
+        const div = document.createElement('div');
+        div.className = 'copilot-typing';
+        div.innerHTML = '<span class="copilot-typing__dot"></span><span class="copilot-typing__dot"></span><span class="copilot-typing__dot"></span>';
+        mensagens.appendChild(div);
+        mensagens.scrollTop = mensagens.scrollHeight;
+        return div;
+    }
+
     form.addEventListener('submit', (evento) => {
         evento.preventDefault();
         const pergunta = input.value.trim();
@@ -40,14 +49,16 @@ document.addEventListener('DOMContentLoaded', () => {
         adicionarMensagem(pergunta, 'user');
         input.value = '';
 
+        const digitando = mostrarDigitando();
         const resposta = respostas.find((r) => r.padrao.test(pergunta));
         setTimeout(() => {
+            digitando.remove();
             adicionarMensagem(
                 resposta
                     ? resposta.texto
                     : 'Ainda estou aprendendo sobre esse assunto. Tente perguntar sobre "resumo do dia", "incidentes críticos", "previsão" ou "SLA".',
                 'bot',
             );
-        }, 500);
+        }, 700);
     });
 });

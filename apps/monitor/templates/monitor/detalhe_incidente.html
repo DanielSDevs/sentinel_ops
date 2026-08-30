@@ -1,0 +1,154 @@
+{% extends 'base.html' %}
+{% load sentinel %}
+
+{% block title %}SentinelOps — {{ incidente.numero }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <p class="linha-meta"><a href="{% url 'monitor:incidentes' %}">← Incident Intelligence</a></p>
+    <h1 class="mono">{{ incidente.numero }}</h1>
+    <p class="page-header__subtitle">{{ incidente.descricao }}</p>
+</div>
+
+<section class="secao">
+    <div class="tiles">
+        <div class="tile">
+            <span class="tile__label">Prioridade</span>
+            <span class="tile__valor sev-{% if incidente.prioridade <= 2 %}critical{% elif incidente.prioridade == 3 %}warning{% else %}neutral{% endif %}">
+                P{{ incidente.prioridade }}
+            </span>
+            <span class="tile__sub">meta de OLA: {{ incidente.sla_minutos }} min</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Situação de OLA</span>
+            <span class="tile__valor">
+                {% if incidente.kpi_violado %}<span class="sev-critical">Violado</span>
+                {% elif incidente.entrou_kpi %}<span class="sev-healthy">Dentro</span>
+                {% else %}<span class="sev-neutral">Fora do KPI</span>{% endif %}
+            </span>
+            <span class="tile__sub">{{ incidente.get_status_display }}</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Tempo de resolução</span>
+            <span class="tile__valor">
+                {% if incidente.mttr_minutos %}{{ incidente.mttr_minutos|floatformat:0 }} min{% else %}—{% endif %}
+            </span>
+            <span class="tile__sub">aberto em {{ incidente.aberto_em|date:"d/m/Y H:i" }}</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Origem</span>
+            <span class="tile__valor" style="font-size:1.1rem">{{ incidente.get_aberto_por_display }}</span>
+            <span class="tile__sub">{{ incidente.equipe.nome }}</span>
+        </div>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="grid grid--2">
+        <div class="card">
+            <h2 class="card__title">Classificação</h2>
+            <div class="table-wrapper">
+                <table class="table">
+                    <tbody>
+                        <tr><th>Produto</th><td class="mono">{{ incidente.produto.codigo|default:"—" }}</td></tr>
+                        <tr><th>Categoria</th><td class="mono">{{ incidente.categoria|default:"—" }}</td></tr>
+                        <tr><th>Subcategoria</th><td class="mono">{{ incidente.subcategoria|default:"—" }}</td></tr>
+                        <tr><th>Item de configuração</th><td class="mono">{{ incidente.item_configuracao.codigo|default:"—" }}</td></tr>
+                        <tr><th>Família de sinal</th><td>{{ incidente.familia_sinal.nome|default:"—" }}</td></tr>
+                        <tr><th>Código de fechamento</th><td>{{ incidente.cod_fechamento|default:"—" }}</td></tr>
+                        <tr><th>Solução</th><td>{{ incidente.get_solucao_display|default:"—" }}</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2 class="card__title">Análise histórica</h2>
+            {% if hipotese %}
+            <div class="insight insight--warning" style="margin-bottom:var(--space-3)">
+                <div class="insight__campo">
+                    <span class="insight__rotulo">Hipótese de causa</span>
+                    <span class="insight__texto">{{ hipotese }}</span>
+                </div>
+            </div>
+            {% endif %}
+
+            {% if perfil %}
+            <div class="risco__medidas">
+                <span class="risco__medida">Amostra <strong>{{ perfil.amostra }}</strong></span>
+                {% if perfil.mttr_mediano %}
+                <span class="risco__medida">MTTR mediano <strong>{{ perfil.mttr_mediano }} min</strong></span>
+                {% endif %}
+                <span class="risco__medida">Violaram OLA <strong>{{ perfil.taxa_violacao }}%</strong></span>
+            </div>
+            {% if perfil.solucao_frequente %}
+            <p class="card__subtitle" style="margin-top:var(--space-2)">
+                Solução mais frequente nos casos semelhantes:
+                <strong>{{ perfil.solucao_frequente.0 }}</strong> ({{ perfil.solucao_frequente.1 }}×).
+            </p>
+            {% endif %}
+            {% else %}
+            <p class="vazio">Sem casos semelhantes suficientes no histórico.</p>
+            {% endif %}
+
+            <details class="explain">
+                <summary>Como medimos similaridade</summary>
+                <div class="explain__corpo">
+                    Match categórico com pesos — o percentual é literalmente a soma dos atributos que
+                    coincidiram, auditável linha a linha. Não usamos embeddings nem ML.
+                    <div class="explain__formula">produto 30 · categoria 25 · subcategoria 20 · família 15 · prioridade 10</div>
+                    Só entram incidentes <strong>anteriores</strong> a este, com no mínimo 40 pontos.
+                </div>
+            </details>
+        </div>
+    </div>
+</section>
+
+{% if semelhantes %}
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Incidentes semelhantes</h2></div>
+    <div class="card">
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr><th>Similaridade</th><th>Número</th><th>Aberto</th><th>Atributos iguais</th><th>Resolução</th><th>Fechamento</th></tr>
+                </thead>
+                <tbody>
+                    {% for s in semelhantes %}
+                    <tr>
+                        <td><span class="chip chip--{% if s.similaridade >= 75 %}critical{% elif s.similaridade >= 55 %}warning{% else %}neutral{% endif %}">{{ s.similaridade }}%</span></td>
+                        <td><a class="mono" href="{% url 'monitor:detalhe_incidente' s.incidente.numero %}">{{ s.incidente.numero }}</a></td>
+                        <td class="mono">{{ s.incidente.aberto_em|date:"d/m/y" }}</td>
+                        <td style="font-size:.78rem">{{ s.atributos_iguais|join:", " }}</td>
+                        <td class="num">{% if s.incidente.mttr_minutos %}{{ s.incidente.mttr_minutos|floatformat:0 }} min{% else %}—{% endif %}</td>
+                        <td style="font-size:.78rem">{{ s.incidente.cod_fechamento|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% if incidente.incidente_pai or filhos %}
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Relações</h2></div>
+    <div class="card">
+        {% if incidente.incidente_pai %}
+        <p>Desdobramento de
+            <a class="mono" href="{% url 'monitor:detalhe_incidente' incidente.incidente_pai.numero %}">{{ incidente.incidente_pai.numero }}</a>
+        </p>
+        {% endif %}
+        {% if filhos %}
+        <p class="card__subtitle">Este incidente gerou {{ filhos|length }} desdobramento(s):</p>
+        <div class="linha-meta">
+            {% for filho in filhos %}
+            <a class="mono" href="{% url 'monitor:detalhe_incidente' filho.numero %}">{{ filho.numero }}</a>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+{% load sentinel %}
+
+{% block title %}SentinelOps — Operational Insights{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Operational Insights</h1>
+    <p class="page-header__subtitle">
+        A plataforma não mostra tudo o que sabe. Cada insight recebe um score de prioridade e só o
+        topo chega aqui — mostrar tudo produz fadiga de alerta e faz o operador ignorar justamente
+        o aviso que importava.
+    </p>
+</div>
+
+<details class="explain" style="margin-bottom:var(--space-4);border-top:none">
+    <summary>Como priorizamos</summary>
+    <div class="explain__corpo">
+        <div class="explain__formula">prioridade = impacto × urgência × confiança × alcance × 100</div>
+        Cada fator vai de 0 a 1 e vem de evidência da base — volume afetado, recência do sinal e
+        tamanho da amostra que sustenta a conclusão. Insights com prioridade baixa continuam sendo
+        calculados, mas não competem por atenção.
+    </div>
+</details>
+
+<div class="pilha">
+    {% for insight in insights %}
+    <div class="insight insight--{{ insight.faixa }}">
+        <div class="insight__topo">
+            <span class="chip chip--{{ insight.faixa }}">{{ rotulos|indice:insight.tipo|default:"Insight" }}</span>
+            <span class="insight__titulo">{{ insight.titulo }}</span>
+            <span class="insight__prio">prioridade {{ insight.prioridade }} · confiança {{ insight.confianca_pct }}%</span>
+        </div>
+
+        <p class="insight__texto">{{ insight.explicacao }}</p>
+
+        <div class="insight__grid">
+            <div class="insight__campo">
+                <span class="insight__rotulo">Impacto</span>
+                <span class="insight__texto">{{ insight.impacto_texto }}</span>
+            </div>
+            <div class="insight__campo">
+                <span class="insight__rotulo">Evidência</span>
+                <span class="insight__texto mono" style="font-size:.76rem">{{ insight.evidencia }}</span>
+            </div>
+            <div class="insight__campo">
+                <span class="insight__rotulo">Ação recomendada</span>
+                <span class="insight__texto">{{ insight.acao }}</span>
+            </div>
+        </div>
+
+        {% if insight.link %}
+        <div><a class="secao__acao" href="{% url insight.link %}">{{ insight.link_rotulo }} →</a></div>
+        {% endif %}
+    </div>
+    {% empty %}
+    <p class="vazio">Nenhum insight acima do limiar de relevância no momento.</p>
+    {% endfor %}
+</div>
+{% endblock %}

@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% load sentinel %}
+
+{% block title %}SentinelOps — Alert Center{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Alert Center</h1>
+    <p class="page-header__subtitle">
+        Cada alerta responde quatro perguntas — o que aconteceu, por que importa, qual o impacto
+        esperado e o que fazer. Alerta que não sustenta uma decisão não é gerado.
+    </p>
+    <div class="linha-meta" style="margin-top:var(--space-2)">
+        <span>{{ alertas|length }} alerta(s) ativo(s)</span>
+        {% if criticos %}<span class="sev-critical">{{ criticos }} de risco alto</span>{% endif %}
+    </div>
+</div>
+
+<div class="pilha">
+    {% for alerta in alertas %}
+    <div class="insight insight--{{ alerta.faixa }}">
+        <div class="insight__topo">
+            <span class="chip chip--{{ alerta.faixa }}">{{ alerta.rotulo_faixa }}</span>
+            <span class="insight__titulo">{{ alerta.titulo }}</span>
+            <span class="insight__prio">
+                {{ alerta.origem }} · {{ alerta.quando|date:"d/m/Y H:i" }}
+                {% if alerta.confianca %} · confiança {{ alerta.confianca }}%{% endif %}
+            </span>
+        </div>
+
+        <div class="insight__grid">
+            <div class="insight__campo">
+                <span class="insight__rotulo">O que aconteceu</span>
+                <span class="insight__texto">{{ alerta.o_que }}</span>
+            </div>
+            <div class="insight__campo">
+                <span class="insight__rotulo">Por que importa</span>
+                <span class="insight__texto">{{ alerta.por_que }}</span>
+            </div>
+            <div class="insight__campo">
+                <span class="insight__rotulo">Impacto esperado</span>
+                <span class="insight__texto">{{ alerta.impacto }}</span>
+            </div>
+            <div class="insight__campo">
+                <span class="insight__rotulo">Ação recomendada</span>
+                <span class="insight__texto">{{ alerta.acao }}</span>
+            </div>
+        </div>
+
+        {% if alerta.evidencia %}
+        <div class="insight__campo">
+            <span class="insight__rotulo">Evidência</span>
+            <span class="insight__texto mono" style="font-size:.75rem">{{ alerta.evidencia }}</span>
+        </div>
+        {% endif %}
+    </div>
+    {% empty %}
+    <p class="vazio">Nenhum alerta ativo — operação dentro dos limiares configurados.</p>
+    {% endfor %}
+</div>
+{% endblock %}

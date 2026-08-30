@@ -5,5 +5,6 @@ from . import views
 app_name = 'alerts'
 
 urlpatterns = [
-    path('', views.index, name='index'),
+    path('', views.alert_center, name='index'),
+    path('decisao/', views.decision_center, name='decisao'),
 ]

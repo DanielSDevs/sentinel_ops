@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+{% load sentinel %}
+
+{% block title %}SentinelOps — Incident Intelligence{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Incident Intelligence</h1>
+    <p class="page-header__subtitle">
+        Cada incidente com contexto histórico: casos semelhantes, tempo típico de resolução e
+        hipótese de causa a partir de como incidentes iguais foram encerrados antes.
+    </p>
+</div>
+
+<form method="get" class="card" style="margin-bottom:var(--space-4)">
+    <div style="display:flex;gap:var(--space-3);flex-wrap:wrap;align-items:flex-end">
+        <label style="flex:1;min-width:200px">
+            <span class="tile__label">Buscar na descrição</span>
+            <input type="search" name="q" value="{{ filtros.busca }}" placeholder="ex: disk space"
+                   style="width:100%;margin-top:.3rem">
+        </label>
+        <label>
+            <span class="tile__label">Prioridade</span><br>
+            <select name="prioridade" style="margin-top:.3rem">
+                <option value="">Todas</option>
+                {% for valor, rotulo in prioridades %}
+                <option value="{{ valor }}" {% if filtros.prioridade == valor|stringformat:"s" %}selected{% endif %}>{{ rotulo }}</option>
+                {% endfor %}
+            </select>
+        </label>
+        <label class="linha-meta" style="align-items:center">
+            <input type="checkbox" name="kpi" value="1" {% if filtros.so_kpi %}checked{% endif %}>
+            <span>Só elegíveis a KPI</span>
+        </label>
+        <button type="submit" class="btn btn--primary btn--sm">Filtrar</button>
+    </div>
+</form>
+
+<div class="card">
+    <div class="table-wrapper">
+        <table class="table">
+            <thead>
+                <tr><th>Número</th><th>Aberto</th><th>Prio</th><th>Descrição</th><th>Produto</th><th>Equipe</th><th>OLA</th></tr>
+            </thead>
+            <tbody>
+                {% for inc in incidentes %}
+                <tr>
+                    <td><a class="mono" href="{% url 'monitor:detalhe_incidente' inc.numero %}">{{ inc.numero }}</a></td>
+                    <td class="mono">{{ inc.aberto_em|date:"d/m/y H:i" }}</td>
+                    <td><span class="chip chip--{% if inc.prioridade <= 2 %}critical{% elif inc.prioridade == 3 %}warning{% else %}neutral{% endif %}">P{{ inc.prioridade }}</span></td>
+                    <td>{{ inc.descricao|truncatechars:70 }}</td>
+                    <td class="mono">{{ inc.produto.codigo|default:"—" }}</td>
+                    <td class="mono">{{ inc.equipe.nome }}</td>
+                    <td>
+                        {% if inc.kpi_violado %}<span class="chip chip--critical">violado</span>
+                        {% elif inc.entrou_kpi %}<span class="chip chip--healthy">ok</span>
+                        {% else %}<span class="chip chip--neutral">fora</span>{% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr><td colspan="7">Nenhum incidente encontrado com esses filtros.</td></tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

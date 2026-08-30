@@ -1,34 +1,69 @@
 {% extends 'base.html' %}
-{% load static %}
+{% load static sentinel %}
 
-{% block title %}SentinelOps — Agent Copilot{% endblock %}
+{% block title %}SentinelOps — Sentinel Copilot{% endblock %}
 
-{% block extra_css %}
-    <link rel="stylesheet" href="{% static 'copilot/css/copilot.css' %}">
-{% endblock %}
+{% block extra_css %}<link rel="stylesheet" href="{% static 'copilot/css/copilot.css' %}">{% endblock %}
 
 {% block content %}
 <div class="page-header">
-    <h1>🤖 Agent Copilot</h1>
+    <h1>Sentinel Copilot</h1>
     <p class="page-header__subtitle">
-        Chatbot com resumos específicos para os agentes e respostas rápidas contextualizadas.
+        Consulta a mesma camada de inferência que alimenta as telas — as respostas nunca divergem
+        do que a plataforma mostra, e cada afirmação vem com os números que a sustentam.
     </p>
 </div>
 
-<div class="card copilot-chat">
-    <div class="copilot-chat__messages" data-chat-messages>
-        <div class="copilot-message copilot-message--bot">
-            Olá! Sou o Agent Copilot do SentinelOps. Pergunte sobre a operação —
-            por exemplo: "resumo do dia" ou "incidentes críticos".
-        </div>
-    </div>
-    <form class="copilot-chat__form" data-chat-form>
-        <input type="text" placeholder="Digite sua pergunta..." autocomplete="off" data-chat-input>
-        <button type="submit" class="btn btn--primary">Enviar</button>
+<section class="secao">
+    <form method="get" class="card">
+        <label style="display:block">
+            <span class="tile__label">Pergunte sobre a operação</span>
+            <div style="display:flex;gap:var(--space-2);margin-top:var(--space-2)">
+                <input type="search" name="q" value="{{ pergunta }}" style="flex:1"
+                       placeholder="ex: por que o Operational Health caiu?" autofocus>
+                <button type="submit" class="btn btn--primary">Perguntar</button>
+            </div>
+        </label>
     </form>
-</div>
-{% endblock %}
+</section>
 
-{% block extra_js %}
-    <script src="{% static 'copilot/js/copilot.js' %}"></script>
+{% if resposta %}
+<section class="secao">
+    <div class="card">
+        <div class="risco__topo" style="margin-bottom:var(--space-3)">
+            <span class="chip chip--healthy">Resposta</span>
+            <span class="insight__prio">calculado sobre os dados carregados</span>
+        </div>
+
+        <p class="briefing__texto" style="font-size:1rem">{{ resposta.texto }}</p>
+
+        {% if resposta.pontos %}
+        <div class="insight__campo" style="margin-top:var(--space-3)">
+            <span class="insight__rotulo">Números que sustentam</span>
+            <ul class="risco__drivers" style="margin-top:var(--space-2)">
+                {% for ponto in resposta.pontos %}<li>{{ ponto }}</li>{% endfor %}
+            </ul>
+        </div>
+        {% endif %}
+
+        {% if resposta.link %}
+        <div style="margin-top:var(--space-3)">
+            <a class="btn btn--outline btn--sm" href="{% url resposta.link %}">{{ resposta.link_rotulo }} →</a>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Perguntas sugeridas</h2></div>
+    <div class="pilha">
+        {% for sugestao in sugestoes %}
+        <a class="cadeia__item" href="?q={{ sugestao|urlencode }}" style="color:inherit">
+            <span class="cadeia__seta">›</span>
+            <span>{{ sugestao }}</span>
+        </a>
+        {% endfor %}
+    </div>
+</section>
 {% endblock %}

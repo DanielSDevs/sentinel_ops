@@ -11,46 +11,140 @@
 <div class="page-header">
     <h1>🖥️ Ops Monitor</h1>
     <p class="page-header__subtitle">
-        Resumo da operação em tempo real e visão corrente da saúde operacional.
+        Saúde operacional em tempo real: incidentes ativos, criticidade (P1/P2) e conformidade de OLA.
     </p>
 </div>
 
 <div class="grid grid--3">
     <div class="card monitor-metric">
-        <p class="monitor-metric__value" data-metric="abertos">—</p>
-        <p class="card__subtitle">Incidentes abertos</p>
+        <span class="icon-chip icon-chip--info">📂</span>
+        <p class="monitor-metric__value">{{ metricas.abertos }}</p>
+        <p class="card__subtitle">Incidentes ativos</p>
     </div>
     <div class="card monitor-metric">
-        <p class="monitor-metric__value" data-metric="criticos">—</p>
+        <span class="icon-chip icon-chip--danger">🔥</span>
+        <p class="monitor-metric__value">{{ metricas.criticos }}</p>
         <p class="card__subtitle">Incidentes críticos (P1/P2)</p>
     </div>
     <div class="card monitor-metric">
-        <p class="monitor-metric__value" data-metric="sla">—</p>
-        <p class="card__subtitle">SLA em conformidade</p>
+        <span class="icon-chip icon-chip--success">🛡️</span>
+        <p class="monitor-metric__value">{{ metricas.sla_conformidade }}%</p>
+        <p class="card__subtitle">Conformidade de OLA (30 dias, só incidentes elegíveis)</p>
+    </div>
+    <div class="card monitor-metric">
+        <span class="icon-chip icon-chip--warning">🔍</span>
+        <p class="monitor-metric__value">{{ ruido_sinal_hoje.pct_ruido }}%</p>
+        <p class="card__subtitle">Ruído de monitoramento hoje ({{ ruido_sinal_hoje.ruido }} de {{ ruido_sinal_hoje.total }} incidentes)</p>
+    </div>
+</div>
+
+<div class="grid grid--2">
+    <div class="card">
+        <h2 class="card__title">🔁 Itens recorrentes (7 dias)</h2>
+        <p class="card__subtitle">Serviços com 3+ incidentes na janela — sinal de instabilidade recorrente antes que vire crônico.</p>
+        {% if itens_recorrentes %}
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Serviço</th>
+                        <th>Equipe</th>
+                        <th>Ocorrências</th>
+                        <th>Última</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in itens_recorrentes %}
+                    <tr>
+                        <td>{{ item.servico }}</td>
+                        <td>{{ item.equipe }}</td>
+                        <td>{{ item.contagem }}</td>
+                        <td>{{ item.ultima|date:"d/m, H:i" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="card__subtitle">Nenhum serviço com recorrência acima do limiar nos últimos 7 dias.</p>
+        {% endif %}
+    </div>
+
+    <div class="card">
+        <h2 class="card__title">🎯 Agrupamentos críticos</h2>
+        <p class="card__subtitle">Combinações serviço × categoria com maior taxa de violação de OLA (mesma lógica da clusterização de risco da análise do dataset).</p>
+        {% if agrupamentos_criticos %}
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Serviço</th>
+                        <th>Categoria</th>
+                        <th>Violação</th>
+                        <th>Risco</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for item in agrupamentos_criticos %}
+                    <tr>
+                        <td>{{ item.servico }}</td>
+                        <td>{{ item.categoria_label }}</td>
+                        <td>{{ item.taxa_violacao_pct }}%</td>
+                        <td><span class="badge {{ item.badge_classe }}">{{ item.tier }}</span></td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="card__subtitle">Volume insuficiente para identificar agrupamentos críticos ainda.</p>
+        {% endif %}
     </div>
 </div>
 
 <div class="card">
     <h2 class="card__title">Saúde dos serviços</h2>
-    <p class="card__subtitle">Dados simulados. A integração com Prometheus/Grafana será feita em sprints futuras.</p>
+    <p class="card__subtitle">Status atual por serviço, com equipe responsável e latência média.</p>
     <div class="table-wrapper">
         <table class="table">
             <thead>
                 <tr>
                     <th>Serviço</th>
+                    <th>Equipe responsável</th>
                     <th>Status</th>
                     <th>Latência média</th>
                     <th>Última verificação</th>
                 </tr>
             </thead>
-            <tbody data-services-table>
-                <!-- Preenchido via monitor.js -->
+            <tbody>
+                {% for item in servicos %}
+                <tr>
+                    <td>{{ item.servico }}</td>
+                    <td>{{ item.equipe }}</td>
+                    <td><span class="badge {{ item.badge_classe }}">{{ item.status_label }}</span></td>
+                    <td>{{ item.latencia_ms }} ms</td>
+                    <td>{{ item.verificado_em|date:"d/m/Y, H:i" }}</td>
+                </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
-    <script src="{% static 'monitor/js/monitor.js' %}"></script>
+<div class="card monitor-simulacao">
+    <h2 class="card__title">Simular cenário operacional</h2>
+    <p class="card__subtitle">
+        Injete um cenário sintético para validar como a operação reage — o impacto se propaga
+        imediatamente para as previsões (Forecast Engine) e para o Risk Alert Center.
+    </p>
+    <form method="post" action="{% url 'monitor:simular' %}" class="monitor-simulacao__form">
+        {% csrf_token %}
+        <button type="submit" name="cenario" value="pico" class="btn btn--outline">
+            ⚡ Simular pico de incidentes
+        </button>
+        <button type="submit" name="cenario" value="degradacao" class="btn btn--outline">
+            🔻 Simular degradação de serviço
+        </button>
+    </form>
+</div>
 {% endblock %}

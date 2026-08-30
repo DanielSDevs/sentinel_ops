@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+{% load sentinel %}
+
+{% block title %}SentinelOps — Produto {{ detalhe.codigo }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <p class="linha-meta"><a href="{% url 'monitor:saude' %}">← Service Health</a></p>
+    <h1 class="mono">{{ detalhe.codigo }}</h1>
+    <p class="page-header__subtitle">Análise detalhada do produto nos últimos 60 dias.</p>
+</div>
+
+<section class="secao">
+    <div class="tiles">
+        <div class="tile">
+            <span class="tile__label">Incidentes (14d)</span>
+            <span class="tile__valor">{{ detalhe.recente.total }}</span>
+            <span class="tile__sub">{{ detalhe.recente.total_kpi }} elegíveis a KPI</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Críticos P1/P2 (14d)</span>
+            <span class="tile__valor sev-warning">{{ detalhe.recente.criticos }}</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Taxa de violação (60d)</span>
+            <span class="tile__valor sev-critical">{{ detalhe.taxa_violacao }}%</span>
+            <span class="tile__sub">{{ detalhe.historico.violacoes }} violações</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">MTTR (60d)</span>
+            <span class="tile__valor">{{ detalhe.mttr_min }} min</span>
+        </div>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="grid grid--2">
+        <div class="card">
+            <h2 class="card__title">Principais sinais</h2>
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead><tr><th>Família de sinal</th><th>Incidentes</th></tr></thead>
+                    <tbody>
+                        {% for f in detalhe.familias %}
+                        <tr><td>{{ f.familia_sinal__nome|default:"—" }}</td><td class="num">{{ f.total }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="card">
+            <h2 class="card__title">Equipes envolvidas</h2>
+            <div class="table-wrapper">
+                <table class="table">
+                    <thead><tr><th>Equipe</th><th>Incidentes</th></tr></thead>
+                    <tbody>
+                        {% for e in detalhe.equipes %}
+                        <tr><td class="mono">{{ e.equipe__nome }}</td><td class="num">{{ e.total }}</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

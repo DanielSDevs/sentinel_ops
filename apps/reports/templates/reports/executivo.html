@@ -1,0 +1,107 @@
+{% extends 'base.html' %}
+{% load sentinel %}
+
+{% block title %}SentinelOps — Executive Report{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Executive Report</h1>
+    <p class="page-header__subtitle">
+        Leitura de 30 dias em termos de exposição e decisão — sem detalhe técnico de operação.
+    </p>
+</div>
+
+<section class="secao">
+    <div class="card">
+        <div class="dial">
+            {% dial saude.score saude.faixa 130 %}
+            <div class="dial__info">
+                <div class="tile__label">Status operacional</div>
+                <div class="dial__status sev-{{ saude.faixa }}" style="font-size:1.4rem">{{ saude.rotulo|upper }}</div>
+                {% if saude.principal_ofensor %}
+                <div class="dial__ofensor">
+                    Principal fator de risco: <strong>{{ saude.principal_ofensor.nome }}</strong>.
+                    {{ saude.principal_ofensor.explicacao }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="tiles">
+        <div class="tile">
+            <span class="tile__label">Serviços em risco</span>
+            <span class="tile__valor sev-critical">{{ servicos_em_risco|length }}</span>
+            <span class="tile__sub">de {{ riscos|length }} avaliados</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Exposição de OLA (30d)</span>
+            <span class="tile__valor">{{ metricas.violacoes }}</span>
+            <span class="tile__sub">violações · conformidade {{ metricas.conformidade_ola }}%</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Volume elegível (30d)</span>
+            <span class="tile__valor">{{ metricas.total_kpi }}</span>
+            <span class="tile__sub">
+                {% if metricas.variacao_kpi is not None %}
+                <span class="{{ metricas.variacao_kpi|classe_variacao }}">{{ metricas.variacao_kpi }}% vs. período anterior</span>
+                {% endif %}
+            </span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Incidentes críticos</span>
+            <span class="tile__valor sev-warning">{{ metricas.criticos }}</span>
+            <span class="tile__sub">prioridade P1/P2</span>
+        </div>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Serviços que exigem atenção executiva</h2></div>
+    <div class="pilha">
+        {% for risco in servicos_em_risco %}
+        <div class="risco risco--{{ risco.faixa }}">
+            <div class="risco__topo">
+                <span class="chip chip--{{ risco.faixa }}">{{ risco.rotulo_faixa }}</span>
+                <span class="risco__nome">{{ risco.chave }}</span>
+                <span class="risco__score sev-{{ risco.faixa }}">{{ risco.score }}</span>
+            </div>
+            <div class="risco__acao">{{ risco.acao }}</div>
+        </div>
+        {% empty %}
+        <p class="vazio">Nenhum serviço acima do limiar de atenção executiva.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Recomendações</h2></div>
+    <div class="pilha">
+        {% for acao in acoes %}
+        <div class="insight insight--{{ acao.faixa }}">
+            <div class="insight__topo">
+                <span class="chip chip--{{ acao.faixa }}">{{ forloop.counter }}</span>
+                <span class="insight__titulo">{{ acao.titulo }}</span>
+            </div>
+            <div class="insight__grid">
+                <div class="insight__campo">
+                    <span class="insight__rotulo">Motivo</span>
+                    <span class="insight__texto">{{ acao.motivo }}</span>
+                </div>
+                <div class="insight__campo">
+                    <span class="insight__rotulo">Impacto</span>
+                    <span class="insight__texto">{{ acao.impacto }}</span>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+<p class="card__subtitle" style="margin-top:var(--space-5)">
+    Impacto expresso em termos operacionais. O extrato do ITSM não contém dados financeiros,
+    portanto a plataforma não estima valores em reais.
+</p>
+{% endblock %}

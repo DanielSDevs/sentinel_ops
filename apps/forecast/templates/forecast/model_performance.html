@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% load sentinel %}
+
+{% block title %}SentinelOps — Model Performance{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Model Performance</h1>
+    <p class="page-header__subtitle">
+        Desempenho do modelo de previsão medido em <strong>holdout cronológico</strong> — o modelo é
+        treinado só com o passado e avaliado em dias que nunca viu. É a única forma honesta de
+        avaliar série temporal.
+    </p>
+</div>
+
+{% if avaliacao %}
+<section class="secao">
+    <div class="tiles">
+        <div class="tile">
+            <span class="tile__label">MAE</span>
+            <span class="tile__valor">{{ avaliacao.mae }}</span>
+            <span class="tile__sub">erro absoluto médio, em incidentes/dia</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">RMSE</span>
+            <span class="tile__valor">{{ avaliacao.rmse }}</span>
+            <span class="tile__sub">penaliza erros grandes</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">MAPE</span>
+            <span class="tile__valor">{% if avaliacao.mape %}{{ avaliacao.mape }}%{% else %}—{% endif %}</span>
+            <span class="tile__sub">erro percentual médio</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Baseline sazonal (MAE)</span>
+            <span class="tile__valor sev-neutral">{{ avaliacao.mae_naive|default:"—" }}</span>
+            <span class="tile__sub">repetir o mesmo dia da semana anterior</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Ganho sobre a baseline</span>
+            <span class="tile__valor {% if ganho and ganho > 0 %}sev-healthy{% else %}sev-critical{% endif %}">
+                {% if ganho is not None %}{{ ganho }}%{% else %}—{% endif %}
+            </span>
+            <span class="tile__sub">
+                {% if ganho and ganho > 0 %}modelo erra menos{% else %}modelo não supera a baseline{% endif %}
+            </span>
+        </div>
+    </div>
+
+    {% if ganho is not None and ganho <= 0 %}
+    <div class="insight insight--warning" style="margin-top:var(--space-3)">
+        <div class="insight__campo">
+            <span class="insight__rotulo">Leitura honesta</span>
+            <span class="insight__texto">
+                Neste recorte o modelo <strong>não supera</strong> a baseline sazonal. Isso é informação
+                útil, não um defeito escondido: com a janela de dados disponível, repetir o mesmo dia da
+                semana anterior é competitivo. Trate a previsão como referência de planejamento, não
+                como garantia — e reavalie conforme mais histórico se acumular.
+            </span>
+        </div>
+    </div>
+    {% endif %}
+</section>
+
+<section class="secao">
+    <div class="card">
+        <h2 class="card__title">Previsto vs. real na janela de teste</h2>
+        <p class="card__subtitle">
+            {{ avaliacao.dias_treino }} dias de treino · {{ avaliacao.dias_teste }} dias de teste ·
+            série <span class="mono">{{ avaliacao.campo }}</span>
+        </p>
+        <div class="table-wrapper" style="margin-top:var(--space-3)">
+            <table class="table">
+                <thead><tr><th>Data</th><th>Real</th><th>Previsto</th><th>Erro</th><th></th></tr></thead>
+                <tbody>
+                    {% for p in avaliacao.pontos %}
+                    <tr>
+                        <td class="mono">{{ p.data|date:"d/m" }}</td>
+                        <td class="num">{{ p.real }}</td>
+                        <td class="num">{{ p.previsto }}</td>
+                        <td class="num {% if p.erro > 0 %}sev-warning{% elif p.erro < 0 %}sev-neutral{% endif %}">
+                            {{ p.erro|floatformat:1 }}
+                        </td>
+                        <td style="width:45%">
+                            <div class="contrib__bar">
+                                <div class="contrib__fill" style="width:{% widthratio p.real maximo 100 %}%;background:var(--sev-neutral)"></div>
+                            </div>
+                            <div class="contrib__bar" style="margin-top:3px">
+                                <div class="contrib__fill" style="width:{% widthratio p.previsto maximo 100 %}%;background:var(--color-primary)"></div>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="linha-meta" style="margin-top:var(--space-2)">
+            <span><span class="chip chip--neutral">real</span></span>
+            <span style="color:var(--color-primary)">▬ previsto</span>
+        </div>
+    </div>
+</section>
+{% else %}
+<p class="vazio">Histórico insuficiente para executar o backtest.</p>
+{% endif %}
+{% endblock %}
