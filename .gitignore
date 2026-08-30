@@ -221,3 +221,9 @@ __marimo__/
 media/**
 !media/**/
 !media/**/.gitkeep
+
+# Materiais do cliente: o extrato do ITSM (~15 MB) e os PDFs do challenge não vão para o
+# repositório público. Coloque o LW-DATASET.xlsx em documentos/ para rodar importar_dataset.
+# A documentação técnica gerada pelo projeto continua versionada.
+documentos/*
+!documentos/SentinelOps_Documentacao_Tecnica.docx
