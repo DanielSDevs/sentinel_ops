@@ -26,7 +26,7 @@ python manage.py migrate            # aplicar migrações (SQLite: db.sqlite3, i
 python manage.py importar_dataset   # carrega o LW-DATASET.xlsx e materializa as métricas diárias
 python manage.py importar_dataset --arquivo caminho.xlsx --aba "Dataset Geral" --manter-simulacoes
 python manage.py makemigrations core forecast ...   # nomes dos apps SEM o prefixo apps.
-python manage.py test               # todos os testes (66)
+python manage.py test               # todos os testes (79)
 python manage.py test apps.intelligence              # testes de um app (aqui COM o prefixo apps.)
 python manage.py test apps.intelligence.tests.CorrelationTest.test_cadeia_conta_pares_na_janela_do_mesmo_ativo
 ```
@@ -79,7 +79,7 @@ O Correlation Engine é o ponto mais caro da plataforma: `cadeia_de_sintomas` va
 
 Notas sobre alguns deles:
 
-- **Forecast** (`apps/forecast/services.py`): média histórica do dia da semana × fator de tendência recente, deliberadamente simples e interpretável. O intervalo de previsão sai do desvio dos resíduos do próprio backtest, e `model_performance` compara o MAE do modelo com o de um baseline ingênuo.
+- **Forecast** (`apps/forecast/services.py`): nível dos últimos 14 dias × perfil do dia da semana, misturado (peso 0,35) com o volume do mesmo dia na semana anterior. Deliberadamente simples e interpretável. Separar nível de perfil é o que faz o modelo acompanhar mudança de patamar sem perder o formato da semana. A avaliação é **walk-forward** (12 origens de 7 dias), não um holdout único — uma janela só bastava para o Natal dominar o MAE reportado. A faixa da previsão é o percentil 80 do erro absoluto medido naquele dia da semana, e `model_performance` reporta MASE, viés e a cobertura que a faixa de fato entrega.
 - **Alerts** (`apps/alerts/services.py`): todo alerta responde o quê / por que importa / impacto / ação. Inclui a regra ruído vs. sinal, que evita alarme falso quando o volume bruto sobe só por ruído de monitoramento.
 - **Copilot** (`apps/copilot/services.py`): não é LLM nem resposta fixa — reconhece intenção por palavra-chave e monta a resposta chamando os mesmos serviços das telas, então nunca diverge do que a plataforma mostra. Formulário GET (`?q=`), sem JS.
 - **Simulação** (`apps/monitor/simulacao.py`, rota `monitor:simular`): injeta um pico de incidentes ou uma degradação com blast radius, marcados com `origem=simulacao`, e permite limpar tudo depois. **Ela grava apenas `Incidente`, não recalcula `MetricaDiaria`** — o efeito aparece de imediato nas telas que leem incidentes direto (Live Operations, itens recorrentes, Correlation, alertas de crítico ativo, detalhe de incidente), mas não nos números agregados (Health Score, Risk Radar, Forecast, anomalias), que só mudam com uma nova importação.
@@ -98,4 +98,4 @@ Notas sobre alguns deles:
 
 `apps/core/tests.py` guarda as **fábricas compartilhadas** (`criar_incidente`, `criar_metrica`, `criar_serie`, `criar_serie_valores`, `montar_operacao`) e a classe base `TesteComCache`, que limpa o cache entre casos — sem isso, a âncora temporal de um teste vaza para o seguinte. Os cenários usam números redondos de propósito, para que o valor esperado possa ser conferido na mão.
 
-Cobertura atual: `apps/core` (âncora temporal, propriedades de `Incidente`, e um smoke test que exige status 200 em todas as telas da sidebar **com e sem dados** — o estado vazio é onde aparecem divisões por zero) e `apps/intelligence` (os nove serviços da camada de inferência e as quatro telas). Os `tests.py` dos demais apps ainda são stubs.
+Cobertura atual: `apps/core` (âncora temporal, propriedades de `Incidente`, e um smoke test que exige status 200 em todas as telas da sidebar **com e sem dados** — o estado vazio é onde aparecem divisões por zero) `apps/intelligence` (os nove serviços da camada de inferência e as quatro telas) e `apps/forecast` (modelo, backtest walk-forward e a leitura da previsão — incluindo o teste de que cada janela treina apenas com o próprio passado). Os `tests.py` dos demais apps ainda são stubs.

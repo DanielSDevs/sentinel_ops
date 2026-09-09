@@ -1,1 +1,6 @@
+# Plataforma web (Django). Para o notebook de análise, veja analytics/requirements.txt.
 Django>=5.2,<5.3
+
+# Exigidos por `python manage.py importar_dataset`, que lê o LW-DATASET.xlsx.
+pandas>=2.2
+openpyxl>=3.1

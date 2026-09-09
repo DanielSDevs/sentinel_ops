@@ -46,11 +46,13 @@
             <details class="explain">
                 <summary>Como o modelo funciona</summary>
                 <div class="explain__corpo">
-                    <div class="explain__formula">previsão(dia) = média_histórica(dia_da_semana) × fator_de_tendência</div>
-                    O fator de tendência compara a média dos últimos 14 dias com os 14 anteriores,
-                    limitado entre 0,6 e 1,8 para não extrapolar demais em cima de ruído.
-                    A faixa vem do desvio dos resíduos do modelo em backtest — ou seja, do erro que
-                    ele de fato comete nesta série. Detalhes em
+                    <div class="explain__formula">previsão(dia) = 0,65 × [nível_recente × perfil(dia_da_semana)] + 0,35 × volume(mesmo dia, semana passada)</div>
+                    O nível é a média dos últimos 14 dias — é o que faz o modelo acompanhar uma
+                    mudança de patamar. O perfil é o quanto cada dia da semana rende em relação à
+                    média (domingo pesa menos que terça) e vem do histórico longo, onde há amostra
+                    para estimá-lo. O último termo ancora a previsão no dado real mais recente
+                    daquele mesmo dia da semana. A faixa é o erro que o modelo de fato comete
+                    naquele dia da semana em backtest walk-forward. Detalhes em
                     <a href="{% url 'forecast:modelo' %}">Model Performance</a>.
                 </div>
             </details>

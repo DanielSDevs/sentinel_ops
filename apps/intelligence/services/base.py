@@ -76,6 +76,24 @@ def desvio_padrao(valores):
     return (sum((v - m) ** 2 for v in valores) / (len(valores) - 1)) ** 0.5
 
 
+def percentil(valores, fracao):
+    """Percentil empírico por interpolação linear. Não assume distribuição nenhuma.
+
+    Usado onde o desvio padrão engana: resíduos de previsão são assimétricos, e uma faixa de
+    ±1σ sobre eles cobre bem menos que os 68% que a normal prometeria.
+    """
+    valores = sorted(valores)
+    if not valores:
+        return 0.0
+    if len(valores) == 1:
+        return float(valores[0])
+    posicao = fracao * (len(valores) - 1)
+    inferior = int(posicao)
+    superior = min(inferior + 1, len(valores) - 1)
+    peso = posicao - inferior
+    return valores[inferior] * (1 - peso) + valores[superior] * peso
+
+
 def variacao_percentual(atual, anterior):
     """Variação relativa. Retorna None quando não há base de comparação (evita '+100%' enganoso)."""
     if not anterior:

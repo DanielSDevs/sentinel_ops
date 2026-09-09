@@ -7,9 +7,9 @@
 <div class="page-header">
     <h1>Model Performance</h1>
     <p class="page-header__subtitle">
-        Desempenho do modelo de previsão medido em <strong>holdout cronológico</strong> — o modelo é
-        treinado só com o passado e avaliado em dias que nunca viu. É a única forma honesta de
-        avaliar série temporal.
+        Desempenho do modelo de previsão medido em <strong>walk-forward</strong> — várias origens
+        consecutivas, cada uma treinada só com o passado dela e avaliada em dias que nunca viu.
+        Uma janela única bastaria para um período atípico definir o número reportado.
     </p>
 </div>
 
@@ -27,9 +27,11 @@
             <span class="tile__sub">penaliza erros grandes</span>
         </div>
         <div class="tile">
-            <span class="tile__label">MAPE</span>
-            <span class="tile__valor">{% if avaliacao.mape %}{{ avaliacao.mape }}%{% else %}—{% endif %}</span>
-            <span class="tile__sub">erro percentual médio</span>
+            <span class="tile__label">MASE</span>
+            <span class="tile__valor {% if avaliacao.mase and avaliacao.mase < 1 %}sev-healthy{% else %}sev-warning{% endif %}">
+                {{ avaliacao.mase|default:"—" }}
+            </span>
+            <span class="tile__sub">abaixo de 1 = erra menos que a baseline</span>
         </div>
         <div class="tile">
             <span class="tile__label">Baseline sazonal (MAE)</span>
@@ -42,10 +44,54 @@
                 {% if ganho is not None %}{{ ganho }}%{% else %}—{% endif %}
             </span>
             <span class="tile__sub">
-                {% if ganho and ganho > 0 %}modelo erra menos{% else %}modelo não supera a baseline{% endif %}
+                vence em {{ avaliacao.vitorias_naive }} de {{ avaliacao.janelas }} janelas
             </span>
         </div>
     </div>
+
+    <div class="tiles" style="margin-top:var(--space-3)">
+        <div class="tile">
+            <span class="tile__label">Viés</span>
+            <span class="tile__valor {% if avaliacao.vies < 0 %}sev-warning{% endif %}">{{ avaliacao.vies }}</span>
+            <span class="tile__sub">
+                erro médio com sinal — negativo = superestima o volume
+            </span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">MAPE</span>
+            <span class="tile__valor">{% if avaliacao.mape %}{{ avaliacao.mape }}%{% else %}—{% endif %}</span>
+            <span class="tile__sub">infla quando o volume do dia é pequeno — prefira o MASE</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Cobertura da faixa</span>
+            <span class="tile__valor {% if avaliacao.cobertura < avaliacao.cobertura_alvo %}sev-warning{% endif %}">
+                {% if avaliacao.cobertura is not None %}{{ avaliacao.cobertura }}%{% else %}—{% endif %}
+            </span>
+            <span class="tile__sub">
+                dos dias reais caíram dentro da faixa prevista (alvo {{ avaliacao.cobertura_alvo }}%)
+            </span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Dispersão do MAE</span>
+            <span class="tile__valor">{{ avaliacao.dispersao_mae }}</span>
+            <span class="tile__sub">quanto o erro varia de uma janela para outra</span>
+        </div>
+    </div>
+
+    {% if avaliacao.cobertura is not None and avaliacao.cobertura < avaliacao.cobertura_alvo %}
+    <div class="insight" style="margin-top:var(--space-3)">
+        <div class="insight__campo">
+            <span class="insight__rotulo">Como ler a faixa</span>
+            <span class="insight__texto">
+                A margem é calibrada para cobrir {{ avaliacao.cobertura_alvo }}% dos dias, mas
+                fora da amostra entrega {{ avaliacao.cobertura }}% — o erro do período recente é
+                maior que o do período em que ela foi calibrada. Alargar a faixa até fechar a
+                conta a tornaria larga demais para decidir escala. Trate-a como faixa provável,
+                não como limite garantido.
+            </span>
+        </div>
+    </div>
+    {% endif %}
 
     {% if ganho is not None and ganho <= 0 %}
     <div class="insight insight--warning" style="margin-top:var(--space-3)">
@@ -64,9 +110,11 @@
 
 <section class="secao">
     <div class="card">
-        <h2 class="card__title">Previsto vs. real na janela de teste</h2>
+        <h2 class="card__title">Previsto vs. real nas janelas mais recentes</h2>
         <p class="card__subtitle">
-            {{ avaliacao.dias_treino }} dias de treino · {{ avaliacao.dias_teste }} dias de teste ·
+            {{ avaliacao.janelas }} janelas de {{ avaliacao.horizonte }} dias ·
+            {{ avaliacao.dias_treino }} dias de treino por janela ·
+            {{ avaliacao.dias_teste }} dias avaliados no total ·
             série <span class="mono">{{ avaliacao.campo }}</span>
         </p>
         <div class="table-wrapper" style="margin-top:var(--space-3)">
@@ -97,6 +145,39 @@
         <div class="linha-meta" style="margin-top:var(--space-2)">
             <span><span class="chip chip--neutral">real</span></span>
             <span style="color:var(--color-primary)">▬ previsto</span>
+        </div>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Erro por janela</h2></div>
+    <div class="card">
+        <p class="card__subtitle">
+            Cada linha é uma origem de previsão independente. O modelo é útil quando ganha da
+            baseline na maioria delas — não quando ganha na média de uma janela só.
+        </p>
+        <div class="table-wrapper" style="margin-top:var(--space-3)">
+            <table class="table">
+                <thead><tr><th>Janela</th><th>MAE do modelo</th><th>MAE da baseline</th><th></th></tr></thead>
+                <tbody>
+                    {% for j in avaliacao.resumo_janelas %}
+                    <tr>
+                        <td class="mono">{{ j.inicio|date:"d/m" }} – {{ j.fim|date:"d/m" }}</td>
+                        <td class="num">{{ j.mae }}</td>
+                        <td class="num">{{ j.mae_naive|default:"—" }}</td>
+                        <td>
+                            {% if j.mae_naive %}
+                                {% if j.mae < j.mae_naive %}
+                                <span class="chip chip--healthy">modelo vence</span>
+                                {% else %}
+                                <span class="chip chip--warning">baseline vence</span>
+                                {% endif %}
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </section>

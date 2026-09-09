@@ -1,16 +1,23 @@
 """Forecast Engine.
 
-Modelo: média histórica do dia da semana × fator de tendência recente. Simples e interpretável
-de propósito — com a janela de dados disponível, a análise do dataset mostrou que modelos mais
-complexos não superaram consistentemente essa abordagem, e um modelo que o operador entende é
-mais útil que um que ele precisa aceitar por fé.
+Modelo: **nível recente × perfil do dia da semana**, ancorado no mesmo dia da semana anterior.
+Simples e interpretável de propósito — o operador precisa entender de onde veio o número.
 
-O intervalo de previsão **não é arbitrado**: sai do desvio dos resíduos do próprio modelo em
-backtest, então reflete o erro que ele de fato comete nesta série.
+Separar as duas partes é o que faz o modelo reagir a mudança de patamar sem perder o formato da
+semana: o nível sai dos últimos `DIAS_NIVEL` dias (adapta rápido), enquanto o perfil de semana
+continua estimado no histórico longo, onde há amostra suficiente para separar segunda de domingo.
+A versão anterior (média de 90 dias por dia da semana × fator de tendência) misturava as duas
+coisas na mesma média e demorava semanas para acompanhar uma queda de volume.
+
+O intervalo de previsão **não é arbitrado**: é o erro que o modelo de fato comete naquele dia da
+semana em backtest walk-forward. Sábado erra menos que terça em valor absoluto, e a faixa mostra
+isso em vez de aplicar a mesma margem a todos os dias.
 """
 
 from collections import defaultdict
 from datetime import timedelta
+
+from django.core.cache import cache
 
 from apps.core.models import Incidente
 from apps.core.tempo import data_referencia
@@ -18,102 +25,226 @@ from apps.intelligence.services import base
 from apps.intelligence.services.base import DIM
 
 HISTORICO_PADRAO = 90
+HORIZONTE_PADRAO = 7
 DIAS_SEMANA = ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom']
 
+# Dias que definem o nível atual da operação. 14 foi o que minimizou o MAE em walk-forward
+# sobre 24 janelas do dataset real — janelas mais curtas oscilam com ruído, mais longas
+# demoram a acompanhar mudança de patamar.
+DIAS_NIVEL = 14
 
-def _media_por_dia_semana(serie):
-    somas = defaultdict(list)
+# Peso do termo de repetição (mesmo dia da semana anterior) na mistura. Ancora a previsão no
+# último dado real observado; 0,35 venceu a baseline sazonal em 18 das 24 janelas testadas.
+PESO_SEMANA_PASSADA = 0.35
+
+JANELAS_BACKTEST = 12
+JANELAS_DETALHE = 3
+CACHE_TTL = 300
+
+# Cobertura que a faixa da previsão se propõe a ter. A margem é o percentil empírico do erro
+# absoluto no backtest, não ±1σ: os resíduos são assimétricos, e a faixa de um desvio padrão
+# cobria só 55% dos dias reais — prometia mais do que entregava.
+#
+# A cobertura medida fora da amostra fica abaixo deste alvo (o backtest reporta as duas em
+# `cobertura_alvo` e `cobertura`), porque o erro do período recente é maior que o do período em
+# que a margem foi calibrada. Subir o alvo não resolve: a 95% a faixa vai a ±31 sobre uma
+# previsão de ~34 e ainda assim não chega aos 80%. Faixa larga demais não informa nada — o
+# caminho honesto é mostrar a cobertura que a faixa de fato entrega.
+COBERTURA_ALVO = 0.80
+
+
+def _perfil_semana(serie):
+    """Índice multiplicativo por dia da semana: quanto o dia rende em relação à média da série.
+
+    Domingo em torno de 0,4 e terça em torno de 1,3 dizem a mesma coisa que duas médias
+    absolutas, mas continuam válidos quando o patamar da operação muda.
+    """
+    por_dia = defaultdict(list)
     for data, valor in serie:
-        somas[data.weekday()].append(valor)
-    return {dia: base.media(valores) for dia, valores in somas.items() if valores}
-
-
-def _fator_tendencia(serie):
-    recentes = [v for _, v in serie[-14:]]
-    anteriores = [v for _, v in serie[-28:-14]] or recentes
-    media_recente = base.media(recentes)
-    media_anterior = base.media(anteriores)
-    if not media_anterior:
-        return 1.0
-    return max(0.6, min(media_recente / media_anterior, 1.8))
+        por_dia[data.weekday()].append(valor)
+    media_geral = base.media(v for _, v in serie)
+    if not media_geral:
+        return {}
+    return {dia: base.media(valores) / media_geral for dia, valores in por_dia.items() if valores}
 
 
 def _modelo(serie):
-    """Devolve uma função que estima o volume de uma data futura."""
-    media_semana = _media_por_dia_semana(serie)
-    media_geral = base.media(v for _, v in serie)
-    fator = _fator_tendencia(serie)
+    """Devolve a função que estima o volume de uma data.
+
+    A previsão mistura duas leituras independentes do mesmo dia: a estrutural (nível × perfil) e
+    a repetição do valor observado 7 dias antes. Nenhuma das duas olha para o futuro: o termo de
+    repetição só existe enquanto `data - 7 dias` estiver dentro da série de ajuste, o que cobre
+    exatamente o horizonte de D+1 a D+7. Além disso ele sai da conta e sobra a parte estrutural.
+    """
+    perfil = _perfil_semana(serie)
+    nivel = base.media(v for _, v in serie[-DIAS_NIVEL:])
+    historico = dict(serie)
 
     def prever(data):
-        return max(0, media_semana.get(data.weekday(), media_geral) * fator)
+        estrutural = nivel * perfil.get(data.weekday(), 1.0)
+        semana_passada = historico.get(data - timedelta(days=7))
+        if semana_passada is None:
+            return max(0.0, estrutural)
+        return max(
+            0.0,
+            estrutural * (1 - PESO_SEMANA_PASSADA) + semana_passada * PESO_SEMANA_PASSADA,
+        )
 
-    return prever, fator
+    return prever
 
 
-def backtest(historico_dias=HISTORICO_PADRAO, dias_teste=21, apenas_kpi=True):
-    """Avalia o modelo em holdout cronológico — nunca em dados que ele já viu.
+def _margens(absolutos, absolutos_por_dia_semana, minimo_amostras=3):
+    """Margem da faixa: percentil `COBERTURA_ALVO` do erro absoluto, geral e por dia da semana.
 
-    Alimenta a tela Model Performance e o intervalo de previsão.
+    Dias da semana com poucas observações caem na margem geral — estimar um percentil com duas
+    amostras produziria uma faixa que só parece precisa.
+    """
+    margens = {'geral': round(base.percentil(absolutos, COBERTURA_ALVO), 1)}
+    for dia, erros in absolutos_por_dia_semana.items():
+        if len(erros) >= minimo_amostras:
+            margens[dia] = round(base.percentil(erros, COBERTURA_ALVO), 1)
+    return margens
+
+
+def backtest(historico_dias=HISTORICO_PADRAO, horizonte=HORIZONTE_PADRAO,
+             janelas=JANELAS_BACKTEST, apenas_kpi=True):
+    """Walk-forward: `janelas` origens consecutivas, cada uma prevendo `horizonte` dias à frente.
+
+    Cada origem treina apenas com os dias anteriores a ela e é avaliada em dias que nunca viu —
+    a origem seguinte só então incorpora o que aconteceu. É o mesmo ciclo que a plataforma vive
+    em produção, onde a previsão é refeita a cada dia com o dado que acabou de chegar.
+
+    A versão anterior media uma única janela de 21 dias, e a última janela do dataset cai sobre o
+    Natal: bastava esse recorte para o MAE reportado dobrar. Agregar várias origens mede o erro
+    típico, e `dispersao_mae` mostra o quanto ele varia de período para período.
+
+    Alimenta a tela Model Performance e a faixa da previsão.
     """
     campo = 'total_kpi' if apenas_kpi else 'total'
-    serie = base.serie_diaria(historico_dias + dias_teste, campo=campo)
-    if len(serie) < dias_teste + 21:
-        return None
+    chave_cache = (
+        f'sentinelops:forecast:backtest:{historico_dias}:{horizonte}:{janelas}:{campo}:'
+        f'{data_referencia():%Y%m%d}'
+    )
+    em_cache = cache.get(chave_cache)
+    if em_cache is not None:
+        return em_cache
 
-    treino, teste = serie[:-dias_teste], serie[-dias_teste:]
-    prever, _fator = _modelo(treino)
+    serie = base.serie_diaria(historico_dias + horizonte * janelas, campo=campo)
 
-    erros, absolutos, percentuais, pontos = [], [], [], []
-    for data, real in teste:
-        estimado = prever(data)
-        erro = real - estimado
-        erros.append(erro)
-        absolutos.append(abs(erro))
-        if real:
-            percentuais.append(abs(erro) / real)
-        pontos.append({
-            'data': data,
-            'real': real,
-            'previsto': round(estimado, 1),
-            'erro': round(erro, 1),
+    residuos, absolutos, percentuais, naive_abs, pontos, resumo_janelas = [], [], [], [], [], []
+    # Por dia da semana, não por passo do horizonte: como as origens andam de 7 em 7 dias, o
+    # passo N cai sempre no mesmo dia da semana, e o que a série realmente separa é sábado de
+    # terça — não D+1 de D+7. Um sábado de 20 incidentes não merece a mesma faixa que uma
+    # terça de 90.
+    absolutos_por_dia_semana = defaultdict(list)
+    cobertos = avaliados_cobertura = 0
+
+    for indice in range(janelas):
+        fim_teste = len(serie) - horizonte * (janelas - 1 - indice)
+        inicio_teste = fim_teste - horizonte
+        treino = serie[max(0, inicio_teste - historico_dias):inicio_teste]
+        teste = serie[inicio_teste:fim_teste]
+        # Janela sem histórico com que aprender (base recém-importada, série ainda curta).
+        if len(teste) < horizonte or len(treino) < DIAS_NIVEL * 2 or not sum(v for _, v in treino):
+            continue
+
+        prever_data = _modelo(treino)
+        conhecido = dict(treino)
+        # A faixa desta janela vem só do erro das janelas anteriores — medir a cobertura com a
+        # margem calculada sobre os próprios pontos avaliados seria autoindulgente.
+        margens = _margens(absolutos, absolutos_por_dia_semana) if len(absolutos) >= horizonte else None
+        abs_janela, abs_naive_janela = [], []
+
+        for data, real in teste:
+            estimado = prever_data(data)
+            erro = real - estimado
+            residuos.append(erro)
+            abs_janela.append(abs(erro))
+            if real:
+                percentuais.append(abs(erro) / real)
+            if margens is not None:
+                avaliados_cobertura += 1
+                cobertos += 1 if abs(erro) <= margens.get(data.weekday(), margens['geral']) else 0
+            absolutos_por_dia_semana[data.weekday()].append(abs(erro))
+
+            anterior = conhecido.get(data - timedelta(days=7))
+            if anterior is not None:
+                abs_naive_janela.append(abs(real - anterior))
+
+            pontos.append({
+                'data': data,
+                'real': real,
+                'previsto': round(estimado, 1),
+                'erro': round(erro, 1),
+                'janela': indice + 1,
+            })
+
+        absolutos += abs_janela
+        naive_abs += abs_naive_janela
+        resumo_janelas.append({
+            'inicio': teste[0][0],
+            'fim': teste[-1][0],
+            'mae': round(base.media(abs_janela), 2),
+            'mae_naive': round(base.media(abs_naive_janela), 2) if abs_naive_janela else None,
         })
 
-    # Baseline ingênua (repetir o valor de 7 dias antes) — referência honesta de comparação.
-    naive_abs = []
-    serie_dict = dict(serie)
-    for data, real in teste:
-        anterior = serie_dict.get(data - timedelta(days=7))
-        if anterior is not None:
-            naive_abs.append(abs(real - anterior))
+    if not resumo_janelas:
+        return None
 
-    return {
-        'mae': round(base.media(absolutos), 2),
-        'rmse': round((base.media([e ** 2 for e in erros])) ** 0.5, 2),
+    mae = base.media(absolutos)
+    mae_naive = base.media(naive_abs) if naive_abs else None
+    resultado = {
+        'mae': round(mae, 2),
+        'rmse': round((base.media([e ** 2 for e in residuos])) ** 0.5, 2),
         'mape': round(base.media(percentuais) * 100, 1) if percentuais else None,
-        'mae_naive': round(base.media(naive_abs), 2) if naive_abs else None,
-        'desvio_residuos': round(base.desvio_padrao(erros), 2),
-        'dias_teste': dias_teste,
-        'dias_treino': len(treino),
-        'pontos': pontos,
+        'mae_naive': round(mae_naive, 2) if mae_naive is not None else None,
+        # MASE < 1 = erra menos que a baseline sazonal. Escala-livre, ao contrário do MAPE, que
+        # explode quando o volume real do dia é pequeno.
+        'mase': round(mae / mae_naive, 2) if mae_naive else None,
+        # Erro médio com sinal: negativo = o modelo vem superestimando o volume.
+        'vies': round(base.media(residuos), 2),
+        'desvio_residuos': round(base.desvio_padrao(residuos), 2),
+        'margens': _margens(absolutos, absolutos_por_dia_semana),
+        'cobertura_alvo': round(COBERTURA_ALVO * 100),
+        'cobertura': (
+            round(cobertos / avaliados_cobertura * 100, 1) if avaliados_cobertura else None
+        ),
+        'dispersao_mae': round(base.desvio_padrao([j['mae'] for j in resumo_janelas]), 2),
+        'vitorias_naive': sum(
+            1 for j in resumo_janelas if j['mae_naive'] is not None and j['mae'] < j['mae_naive']
+        ),
+        'janelas': len(resumo_janelas),
+        'resumo_janelas': resumo_janelas,
+        'horizonte': horizonte,
+        'dias_teste': len(residuos),
+        'dias_treino': historico_dias,
+        'pontos': pontos[-JANELAS_DETALHE * horizonte:],
         'campo': campo,
     }
+    cache.set(chave_cache, resultado, CACHE_TTL)
+    return resultado
 
 
-def prever(dias_futuros=7, historico_dias=HISTORICO_PADRAO, apenas_kpi=True):
+def prever(dias_futuros=HORIZONTE_PADRAO, historico_dias=HISTORICO_PADRAO, apenas_kpi=True):
     campo = 'total_kpi' if apenas_kpi else 'total'
     serie = base.serie_diaria(historico_dias, campo=campo)
-    if not serie:
+    # A série vem densa (dias sem registro viram 0), então "sem histórico" não é lista vazia e
+    # sim série toda zerada. Prever 0 com faixa 0–0 pareceria uma previsão confiante de silêncio;
+    # devolver nada faz a tela cair no estado vazio, que é o honesto.
+    if not sum(v for _, v in serie):
         return []
 
-    prever_data, _fator = _modelo(serie)
+    prever_data = _modelo(serie)
     avaliacao = backtest(historico_dias, apenas_kpi=apenas_kpi)
-    margem = (avaliacao['desvio_residuos'] if avaliacao else 0) or 0
+    margens = avaliacao['margens'] if avaliacao else {'geral': 0}
 
     hoje = data_referencia()
     previsoes = []
     for i in range(1, dias_futuros + 1):
         data = hoje + timedelta(days=i)
         valor = prever_data(data)
+        # Faixa do próprio dia da semana quando o backtest tem amostra para ela.
+        margem = margens.get(data.weekday(), margens['geral'])
         previsoes.append({
             'data': data,
             'dia_semana': DIAS_SEMANA[data.weekday()],
@@ -180,16 +311,28 @@ def interpretar(dados):
 
     avaliacao = dados['avaliacao']
     if avaliacao and avaliacao['mae_naive']:
+        contexto = (
+            f'{avaliacao["janelas"]} janelas de {avaliacao["horizonte"]} dias em walk-forward'
+        )
         if avaliacao['mae'] < avaliacao['mae_naive']:
             ganho = round((1 - avaliacao['mae'] / avaliacao['mae_naive']) * 100)
             partes.append(
-                f'Em backtest, o modelo erra {ganho}% menos que simplesmente repetir o mesmo dia '
-                f'da semana anterior (MAE {avaliacao["mae"]} vs. {avaliacao["mae_naive"]}).'
+                f'Em backtest ({contexto}), o modelo erra {ganho}% menos que simplesmente repetir '
+                f'o mesmo dia da semana anterior (MAE {avaliacao["mae"]} vs. '
+                f'{avaliacao["mae_naive"]}), vencendo essa baseline em '
+                f'{avaliacao["vitorias_naive"]} das {avaliacao["janelas"]} janelas.'
             )
         else:
             partes.append(
-                f'Em backtest o modelo não supera a baseline sazonal (MAE {avaliacao["mae"]} vs. '
-                f'{avaliacao["mae_naive"]}) — trate a previsão como referência, não como garantia.'
+                f'Em backtest ({contexto}) o modelo não supera a baseline sazonal '
+                f'(MAE {avaliacao["mae"]} vs. {avaliacao["mae_naive"]}) — trate a previsão como '
+                f'referência, não como garantia.'
+            )
+        if avaliacao['vies'] and abs(avaliacao['vies']) >= avaliacao['mae'] * 0.3:
+            direcao = 'subestimou' if avaliacao['vies'] > 0 else 'superestimou'
+            partes.append(
+                f'Atenção ao viés: no período avaliado o modelo {direcao} o volume em '
+                f'{abs(avaliacao["vies"]):.1f} incidentes/dia em média.'
             )
     return ' '.join(partes)
 

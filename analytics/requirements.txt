@@ -1,0 +1,9 @@
+# Dependências do notebook EC_Sprint_3_SentinelOps_ML.ipynb.
+# Instale com: pip install -r analytics/requirements.txt
+pandas>=2.2
+numpy>=1.26
+openpyxl>=3.1
+matplotlib>=3.8
+seaborn>=0.13
+scikit-learn>=1.4
+statsmodels>=0.14
