@@ -54,12 +54,18 @@ escalável — em vez de mobilizar a operação por um problema que não existe.
 python -m venv .venv
 .venv\Scripts\activate
 pip install -r requirements.txt
-pip install pandas openpyxl          # necessários apenas para importar o dataset
 
 python manage.py migrate
 python manage.py importar_dataset    # ver nota sobre o dataset abaixo
+python manage.py createsuperuser     # toda tela exige login (ou cadastre-se em /contas/registro/)
 python manage.py runserver           # http://127.0.0.1:8000
 ```
+
+### Deploy
+
+A plataforma publica no **Azure App Service** (Linux, Python 3.13) pelo GitHub Actions a cada push
+na `main`, com a base SQLite no armazenamento persistente do App Service. Passo a passo em
+[`DEPLOY.md`](DEPLOY.md).
 
 ### O dataset
 

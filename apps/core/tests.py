@@ -12,6 +12,7 @@ dia que passasse.
 from datetime import datetime, timedelta
 from itertools import count
 
+from django.contrib.auth.models import User
 from django.core.cache import cache
 from django.test import TestCase
 from django.urls import reverse
@@ -143,6 +144,15 @@ class TesteComCache(TestCase):
         self.addCleanup(cache.clear)
 
 
+class TesteDeTela(TesteComCache):
+    """Base para testes que abrem telas: toda rota exige login (LoginRequiredMiddleware)."""
+
+    def setUp(self):
+        super().setUp()
+        operador = User.objects.create_user('operador', password='senha-de-teste')
+        self.client.force_login(operador)
+
+
 class TempoTest(TesteComCache):
     def test_referencia_e_o_ultimo_incidente_aberto(self):
         criar_incidente(REFERENCIA - timedelta(days=10))
@@ -195,7 +205,7 @@ class IncidenteTest(TesteComCache):
         self.assertFalse(criar_incidente(status=Incidente.Status.ENCERRADO).esta_ativo)
 
 
-class RotasTest(TesteComCache):
+class RotasTest(TesteDeTela):
     """Toda tela da sidebar precisa renderizar — com dados e também sem nenhum.
 
     O estado vazio é o que a plataforma mostra logo depois de um `importar_dataset --limpar`, e
@@ -231,3 +241,26 @@ class RotasTest(TesteComCache):
         for nome in self.ROTAS:
             with self.subTest(rota=nome):
                 self.assertEqual(self.client.get(reverse(nome)).status_code, 200)
+
+
+class AcessoTest(TesteComCache):
+    """Os dados da Locaweb não podem ficar abertos a quem só tem a URL do deploy."""
+
+    def test_visitante_anonimo_e_levado_ao_login(self):
+        login = reverse('accounts:login')
+        for nome in RotasTest.ROTAS:
+            with self.subTest(rota=nome):
+                resposta = self.client.get(reverse(nome))
+                self.assertRedirects(resposta, f'{login}?next={reverse(nome)}')
+
+    def test_login_e_cadastro_ficam_abertos(self):
+        for nome in ('accounts:login', 'accounts:register'):
+            with self.subTest(rota=nome):
+                self.assertEqual(self.client.get(reverse(nome)).status_code, 200)
+
+    def test_cadastro_ja_entra_na_plataforma(self):
+        self.client.post(reverse('accounts:register'), {
+            'username': 'nova.operadora',
+            'password1': 'Sentinel#2026!', 'password2': 'Sentinel#2026!',
+        })
+        self.assertEqual(self.client.get(reverse('core:home')).status_code, 200)

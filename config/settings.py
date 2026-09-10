@@ -8,24 +8,52 @@ https://docs.djangoproject.com/en/5.2/topics/settings/
 
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
+
+Tudo o que muda entre desenvolvimento e produção vem de variável de ambiente. Sem nenhuma
+definida, o projeto roda como antes (DEBUG ligado, SQLite na raiz). No Azure App Service a
+variável WEBSITE_HOSTNAME existe sempre, e é ela que liga o modo de produção.
 """
 
+import os
 from pathlib import Path
+
+from django.core.exceptions import ImproperlyConfigured
+
+
+def _env_bool(nome, padrao):
+    valor = os.environ.get(nome)
+    if valor is None:
+        return padrao
+    return valor.strip().lower() in ('1', 'true', 'yes', 'sim', 'on')
+
+
+def _env_lista(nome):
+    return [item.strip() for item in os.environ.get(nome, '').split(',') if item.strip()]
+
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+AZURE_HOSTNAME = os.environ.get('WEBSITE_HOSTNAME', '')
+EM_PRODUCAO = _env_bool('DJANGO_PRODUCAO', bool(AZURE_HOSTNAME))
 
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-@!kfvj)g@0!f0u8-meqj84ko^$!-x8j07=pva)i735b*ugs2p8'
+DEBUG = _env_bool('DJANGO_DEBUG', not EM_PRODUCAO)
 
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', '')
+if not SECRET_KEY:
+    if EM_PRODUCAO:
+        raise ImproperlyConfigured('Defina DJANGO_SECRET_KEY nas configurações do App Service.')
+    SECRET_KEY = 'django-insecure-@!kfvj)g@0!f0u8-meqj84ko^$!-x8j07=pva)i735b*ugs2p8'
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = _env_lista('DJANGO_ALLOWED_HOSTS')
+CSRF_TRUSTED_ORIGINS = _env_lista('DJANGO_CSRF_TRUSTED_ORIGINS')
+if AZURE_HOSTNAME:
+    ALLOWED_HOSTS.append(AZURE_HOSTNAME)
+    CSRF_TRUSTED_ORIGINS.append(f'https://{AZURE_HOSTNAME}')
 
 
 # Application definition
@@ -54,9 +82,16 @@ MIDDLEWARE = [
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
+    # Toda tela exige login; as exceções são marcadas com @login_not_required.
+    'django.contrib.auth.middleware.LoginRequiredMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
 ]
+
+if EM_PRODUCAO:
+    # Serve os estáticos pelo próprio gunicorn — o App Service não tem nginx na frente. Em dev o
+    # runserver já faz isso, e o WhiteNoise só reclamaria da pasta do collectstatic inexistente.
+    MIDDLEWARE.insert(1, 'whitenoise.middleware.WhiteNoiseMiddleware')
 
 ROOT_URLCONF = 'config.urls'
 
@@ -81,11 +116,20 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
+#
+# No App Service o código é extraído para uma pasta temporária a cada deploy; só /home sobrevive.
+# Por isso, em produção, SQLITE_PATH aponta para /home/data/db.sqlite3.
 
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': os.environ.get('SQLITE_PATH', BASE_DIR / 'db.sqlite3'),
+        'OPTIONS': {
+            # /home é um compartilhamento de rede: esperar o lock em vez de falhar com
+            # "database is locked", e pegar o lock de escrita já no início da transação.
+            'timeout': 20,
+            'transaction_mode': 'IMMEDIATE',
+        },
     }
 }
 
@@ -128,6 +172,20 @@ STATIC_URL = 'static/'
 
 STATICFILES_DIRS = [BASE_DIR / 'static']
 
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+
+# O storage com manifesto só existe depois do collectstatic (que o build do App Service roda).
+# Em dev e nos testes ele quebraria qualquer tela, então fica restrito à produção.
+STORAGES = {
+    'default': {'BACKEND': 'django.core.files.storage.FileSystemStorage'},
+    'staticfiles': {
+        'BACKEND': (
+            'whitenoise.storage.CompressedManifestStaticFilesStorage' if EM_PRODUCAO
+            else 'django.contrib.staticfiles.storage.StaticFilesStorage'
+        ),
+    },
+}
+
 # Media files (uploads de usuários)
 # https://docs.djangoproject.com/en/5.2/topics/files/
 
@@ -139,7 +197,40 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 LOGIN_URL = 'accounts:login'
 LOGIN_REDIRECT_URL = 'core:home'
-LOGOUT_REDIRECT_URL = 'core:home'
+LOGOUT_REDIRECT_URL = 'accounts:login'
+
+
+# Segurança em produção
+# O App Service termina o TLS no front-end e repassa a requisição em HTTP com X-Forwarded-Proto.
+
+if EM_PRODUCAO:
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+    SECURE_SSL_REDIRECT = True
+    SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 60 * 60 * 24
+
+# Subdomínios e preload só fazem sentido com domínio próprio; num *.azurewebsites.net não se
+# aplicam, e ligá-los só para calar o `check --deploy` seria uma promessa que não cumprimos.
+SILENCED_SYSTEM_CHECKS = ['security.W005', 'security.W021']
+
+
+# Logs no stdout, que é o que o Log Stream do App Service captura. Com DEBUG desligado, sem isso
+# um erro 500 não deixaria rastro nenhum.
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {'console': {'class': 'logging.StreamHandler'}},
+    'root': {'handlers': ['console'], 'level': 'WARNING'},
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': os.environ.get('DJANGO_LOG_LEVEL', 'INFO'),
+            'propagate': False,
+        },
+    },
+}
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field

@@ -16,7 +16,9 @@ Três decisões atravessam o código inteiro e explicam a maior parte das escolh
 2. **Âncora temporal.** O extrato termina em 31/12/2025, então `timezone.now()` cairia num vazio. `apps/core/tempo.py` ancora o "agora" da plataforma no último incidente aberto (`referencia_temporal()`, em cache de 5 min) e todas as janelas partem dele.
 3. **Números auditáveis.** Nenhum score aparece sozinho: Health Score vem com a contribuição de cada fator, Risk Radar com probabilidade e impacto separados, anomalias com a faixa esperada, previsões com intervalo derivado dos resíduos do backtest. Ao mexer nesses serviços, mantenha a evidência junto do número.
 
-Ainda **não** existem: API, Celery/Redis, Airflow, MLflow e Postgres (o banco de dev é SQLite).
+Ainda **não** existem: API, Celery/Redis, Airflow, MLflow e Postgres (o banco é SQLite, também em produção).
+
+**Deploy:** Azure App Service (Linux, Python 3.13) via GitHub Actions (`.github/workflows/azure-deploy.yml`), com a base SQLite em `/home/data/` e `startup.sh` como comando de inicialização. O passo a passo está em `DEPLOY.md`. `config/settings.py` lê tudo de variáveis de ambiente e entra em modo produção quando `WEBSITE_HOSTNAME` existe (App Service) ou `DJANGO_PRODUCAO=1`; sem nenhuma variável, roda em dev como sempre.
 
 ## Comandos
 
@@ -26,12 +28,12 @@ python manage.py migrate            # aplicar migrações (SQLite: db.sqlite3, i
 python manage.py importar_dataset   # carrega o LW-DATASET.xlsx e materializa as métricas diárias
 python manage.py importar_dataset --arquivo caminho.xlsx --aba "Dataset Geral" --manter-simulacoes
 python manage.py makemigrations core forecast ...   # nomes dos apps SEM o prefixo apps.
-python manage.py test               # todos os testes (79)
+python manage.py test               # todos os testes (82)
 python manage.py test apps.intelligence              # testes de um app (aqui COM o prefixo apps.)
 python manage.py test apps.intelligence.tests.CorrelationTest.test_cadeia_conta_pares_na_janela_do_mesmo_ativo
 ```
 
-`importar_dataset` apaga e recarrega tudo (incidentes, dimensões e `MetricaDiaria`) dentro de uma transação, e invalida o cache da referência temporal no fim. Leva alguns minutos e exige `pandas` e `openpyxl` — que **não** estão em `requirements.txt` (hoje só o Django), então precisam ser instalados à parte.
+`importar_dataset` apaga e recarrega tudo (incidentes, dimensões e `MetricaDiaria`) dentro de uma transação, e invalida o cache da referência temporal no fim. Leva alguns minutos e exige `pandas` e `openpyxl` (já em `requirements.txt`).
 
 ## Arquitetura
 
@@ -91,6 +93,7 @@ Notas sobre alguns deles:
 - Templates de app em `apps/<app>/templates/<app>/`; estáticos de app em `apps/<app>/static/<app>/css|js/`. Layout global (`base.html`, `sidebar.html`, `components/`) em `templates/`; CSS global em `static/css/` (`variables.css` → `global.css` → `components.css`).
 - Todo template estende `templates/base.html` e injeta CSS/JS via `extra_css`/`extra_js`. Use as variáveis CSS de `variables.css` em vez de valores fixos; os componentes de UI (card, chip, tile, secao, insight, risco, cadeia, explain) já existem em `components.css`.
 - Interface em português brasileiro (`LANGUAGE_CODE = 'pt-br'`, fuso `America/Sao_Paulo`); código (identificadores) em inglês, exceto o domínio, que segue o vocabulário do dataset em português.
+- **Toda rota exige login** (`LoginRequiredMiddleware`). Uma view nova já nasce protegida; só as que precisam ficar abertas (login, cadastro) levam `@login_not_required`. Testes que abrem telas herdam de `TesteDeTela` (em `apps/core/tests.py`), que já faz o login.
 - As telas são renderizadas no servidor. `static/js/main.js` cuida só de interação (drawer da sidebar, link ativo, fechar alertas, animação de entrada dos cards) — não há geração de dados no cliente.
 - Sobraram da estrutura anterior alguns arquivos não referenciados (`core/home.html`, `monitor/index.html`, `alerts/index.html`, `reports/index.html` e os JS de módulo de accounts/alerts/copilot/monitor/reports). Não estenda esses arquivos; as telas vivas são as da tabela acima.
 
@@ -98,4 +101,4 @@ Notas sobre alguns deles:
 
 `apps/core/tests.py` guarda as **fábricas compartilhadas** (`criar_incidente`, `criar_metrica`, `criar_serie`, `criar_serie_valores`, `montar_operacao`) e a classe base `TesteComCache`, que limpa o cache entre casos — sem isso, a âncora temporal de um teste vaza para o seguinte. Os cenários usam números redondos de propósito, para que o valor esperado possa ser conferido na mão.
 
-Cobertura atual: `apps/core` (âncora temporal, propriedades de `Incidente`, e um smoke test que exige status 200 em todas as telas da sidebar **com e sem dados** — o estado vazio é onde aparecem divisões por zero) `apps/intelligence` (os nove serviços da camada de inferência e as quatro telas) e `apps/forecast` (modelo, backtest walk-forward e a leitura da previsão — incluindo o teste de que cada janela treina apenas com o próprio passado). Os `tests.py` dos demais apps ainda são stubs.
+Cobertura atual: `apps/core` (âncora temporal, propriedades de `Incidente`, o bloqueio de acesso anônimo, e um smoke test que exige status 200 em todas as telas da sidebar **com e sem dados** — o estado vazio é onde aparecem divisões por zero) `apps/intelligence` (os nove serviços da camada de inferência e as quatro telas) e `apps/forecast` (modelo, backtest walk-forward e a leitura da previsão — incluindo o teste de que cada janela treina apenas com o próprio passado). Os `tests.py` dos demais apps ainda são stubs.

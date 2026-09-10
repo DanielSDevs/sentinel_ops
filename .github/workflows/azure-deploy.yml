@@ -1,0 +1,89 @@
+# Testa, empacota e publica o SentinelOps no Azure App Service a cada push na main.
+# Configuração necessária no repositório (Settings > Secrets and variables > Actions) — ver DEPLOY.md:
+#   variável AZURE_WEBAPP_NAME             nome do App Service
+#   segredo  AZURE_WEBAPP_PUBLISH_PROFILE  perfil de publicação baixado do portal
+# Sem a variável, o workflow só roda os testes e pula a publicação.
+
+name: Deploy no Azure App Service
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# Dois pushes seguidos não publicam em paralelo; o segundo espera o primeiro terminar.
+concurrency:
+  group: azure-deploy
+  cancel-in-progress: false
+
+env:
+  PYTHON_VERSION: '3.13'
+
+jobs:
+  build:
+    name: Testes e pacote
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Instalar dependências
+        run: pip install -r requirements.txt
+
+      - name: Testes
+        run: python manage.py test
+
+      - name: Checagens de produção e coleta dos estáticos
+        env:
+          DJANGO_PRODUCAO: '1'
+        run: |
+          export DJANGO_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(50))')"
+          python manage.py check --deploy --fail-level WARNING
+          python manage.py collectstatic --noinput
+
+      - name: Empacotar
+        run: |
+          zip -qr release.zip . \
+            -x '.git/*' '.github/*' 'analytics/*' 'documentos/*' '*__pycache__*' '_verif.py'
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sentinelops
+          path: release.zip
+          retention-days: 7
+
+  deploy:
+    name: Publicar no App Service
+    needs: build
+    if: vars.AZURE_WEBAPP_NAME != ''
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ steps.deploy.outputs.webapp-url }}
+    steps:
+      - name: Conferir o perfil de publicação
+        env:
+          PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        run: |
+          if [ -z "$PUBLISH_PROFILE" ]; then
+            echo "::error::Segredo AZURE_WEBAPP_PUBLISH_PROFILE não configurado (ver DEPLOY.md)."
+            exit 1
+          fi
+
+      - uses: actions/download-artifact@v4
+        with:
+          name: sentinelops
+
+      - uses: azure/webapps-deploy@v3
+        id: deploy
+        with:
+          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
+          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          package: release.zip

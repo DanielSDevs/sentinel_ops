@@ -1,0 +1,2 @@
+# Scripts executados no Linux do App Service: com CRLF o shell falha em "set -e\r".
+*.sh text eol=lf

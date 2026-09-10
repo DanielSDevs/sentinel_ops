@@ -17,6 +17,7 @@ from apps.core.tests import (
     DIM,
     REFERENCIA,
     TesteComCache,
+    TesteDeTela,
     criar_ativo,
     criar_equipe,
     criar_familia,
@@ -640,7 +641,7 @@ class BriefingTest(TesteComCache):
         self.assertEqual(len(acoes), len(set(acoes)))
 
 
-class ViewsTest(TesteComCache):
+class ViewsTest(TesteDeTela):
     ROTAS = ['intelligence:risk', 'intelligence:anomaly',
              'intelligence:correlation', 'intelligence:insights']
 
