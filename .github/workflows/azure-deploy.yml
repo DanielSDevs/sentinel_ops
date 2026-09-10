@@ -42,7 +42,9 @@ jobs:
 
       - name: Checagens de produção e coleta dos estáticos
         env:
-          DJANGO_PRODUCAO: '1'
+          # Simula o App Service, que sempre define WEBSITE_HOSTNAME: liga o modo produção e
+          # preenche ALLOWED_HOSTS/CSRF_TRUSTED_ORIGINS pelo mesmo caminho que o servidor usa.
+          WEBSITE_HOSTNAME: ci.azurewebsites.net
         run: |
           export DJANGO_SECRET_KEY="$(python -c 'import secrets; print(secrets.token_urlsafe(50))')"
           python manage.py check --deploy --fail-level WARNING
