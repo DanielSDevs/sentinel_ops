@@ -1,145 +1,154 @@
 """Testes do Forecast Engine.
 
-Os cenários usam números redondos de propósito: com nível 100 e perfil plano, a previsão de
-qualquer dia tem que dar 100, e o valor esperado pode ser conferido na mão.
+O motor de previsão agora é o modelo treinado em `ml/` — o que sobrou neste app é a camada de
+leitura: buscar a previsão, escrever a narrativa e montar o calendário. É isso que se testa aqui.
+
+O comportamento **sem modelo treinado** é o caso mais importante: `ml/models/` não é
+pré-requisito para rodar os testes nem para subir a aplicação, e o que a plataforma não pode
+fazer é preencher o buraco com uma média e chamar de previsão.
+
+As partes de ML propriamente ditas (features, partições temporais, métricas, ausência de
+vazamento) são testadas em `apps/ml/tests.py`, sobre séries determinísticas.
 """
 
-from datetime import timedelta
+from datetime import date, timedelta
 
-from apps.core.tests import DATA_REFERENCIA, TesteComCache, criar_incidente, criar_serie_valores
-from apps.core.tests import REFERENCIA
+from apps.core.tests import (
+    DATA_REFERENCIA, REFERENCIA, TesteComCache, criar_incidente, criar_serie_valores,
+)
 from apps.forecast import services
+from apps.intelligence.services.base import DIM
 
 
-def _serie_constante(dias, valor):
-    criar_serie_valores([valor] * dias)
-    criar_incidente(REFERENCIA)
-
-
-def _serie_por_dia_semana(dias, util, fim_de_semana, ruido=0):
-    """Série terminando na data de referência, com valor definido pelo dia da semana de cada data.
-
-    `ruido` alterna ±ruido nos dias úteis, para os testes que precisam de erro diferente de zero.
-    """
-    datas = [DATA_REFERENCIA - timedelta(days=dias - 1 - i) for i in range(dias)]
-    valores = [
-        (fim_de_semana if data.weekday() >= 5 else util + (ruido if i % 2 else -ruido))
-        for i, data in enumerate(datas)
+def _previsao_falsa(valores=(40, 45, 50), mae=3.2, mae_baseline=4.0):
+    """Bloco no formato que `inferencia.resumo_global` devolve, para testar só a narrativa."""
+    previsoes = [
+        {
+            'data': DATA_REFERENCIA + timedelta(days=i + 1),
+            'horizonte': i + 1,
+            'dia_semana': 'Seg',
+            'valor': valor,
+            'minimo': valor - 5,
+            'maximo': valor + 5,
+            'modelo': 'model_d1',
+            'algoritmo': 'XGBRegressor',
+            'media_recente': 40.0,
+            'probabilidade_pico': 0.8 if i == 2 else 0.1,
+            'pico': i == 2,
+        }
+        for i, valor in enumerate(valores)
     ]
-    criar_serie_valores(valores)
-    criar_incidente(REFERENCIA)
+    return {
+        'd1': previsoes[0],
+        'previsoes': previsoes,
+        'd7_total': sum(valores),
+        'd7_min': sum(p['minimo'] for p in previsoes),
+        'd7_max': sum(p['maximo'] for p in previsoes),
+        'media_recente': 40.0,
+        'variacao_d1': 0.0,
+        'tendencia': 2.0,
+        'pico': max(previsoes, key=lambda p: p['valor']),
+        'origem': DATA_REFERENCIA,
+        'explicacao': {
+            'modelo': 'model_d1',
+            'algoritmo': 'XGBRegressor',
+            'valor_base': 38.0,
+            'contribuicoes': [{
+                'feature': 'media_7', 'descricao': 'média dos últimos 7 dias',
+                'contribuicao': 4.2, 'valor': 41.0, 'sentido': 'aumenta',
+            }],
+        },
+        'modelo': {
+            'nome': 'model_d1',
+            'algoritmo': 'XGBRegressor',
+            'metricas': {
+                'teste': {'mae': mae, 'mae_baseline': mae_baseline},
+                'walk_forward': {
+                    'janelas': 12, 'mae': mae, 'mae_baseline': mae_baseline,
+                    'vitorias_sobre_baseline': 10,
+                },
+            },
+        },
+        'avaliacao': {},
+    }
 
 
-class ModeloTest(TesteComCache):
-    def test_serie_constante_preve_o_mesmo_valor(self):
-        _serie_constante(120, 100)
+class SemModeloTest(TesteComCache):
+    """Sem artefato treinado, nada de previsão — e nada de número improvisado no lugar."""
 
-        previsoes = services.prever(7)
-
-        self.assertEqual([p['valor'] for p in previsoes], [100] * 7)
-
-    def test_perfil_separa_dia_forte_de_dia_fraco(self):
-        # 100 nos dias úteis, 20 no fim de semana — montado a partir do dia da semana de cada
-        # data, não de um padrão repetido, que sairia do lugar se o tamanho da série mudasse.
-        _serie_por_dia_semana(140, util=100, fim_de_semana=20)
-
-        por_dia = {p['data'].weekday(): p['valor'] for p in services.prever(7)}
-
-        self.assertEqual(por_dia[0], 100)
-        self.assertEqual(por_dia[5], 20)
-
-    def test_nivel_recente_domina_o_historico_antigo(self):
-        """Mudança de patamar: o modelo antigo diluía a queda na média de 90 dias."""
-        criar_serie_valores([200] * 100 + [50] * 20)
+    def test_resumo_devolve_nada(self):
+        criar_serie_valores([100] * 120)
         criar_incidente(REFERENCIA)
-
-        valores = [p['valor'] for p in services.prever(7)]
-
-        # Nível vem dos últimos 14 dias (50) e o termo de repetição também aponta 50.
-        self.assertTrue(all(45 <= v <= 60 for v in valores), valores)
-
-    def test_previsao_nunca_e_negativa(self):
-        criar_serie_valores([0] * 100 + [5] * 20)
-        criar_incidente(REFERENCIA)
-
-        self.assertTrue(all(p['valor'] >= 0 and p['minimo'] >= 0 for p in services.prever(7)))
-
-    def test_faixa_envolve_o_valor_previsto(self):
-        criar_serie_valores([100, 80, 120, 90, 110, 30, 25] * 25)
-        criar_incidente(REFERENCIA)
-
-        for p in services.prever(7):
-            self.assertLessEqual(p['minimo'], p['valor'])
-            self.assertGreaterEqual(p['maximo'], p['valor'])
-
-
-class BacktestTest(TesteComCache):
-    def test_serie_previsivel_tem_erro_proximo_de_zero(self):
-        _serie_constante(200, 100)
-
-        avaliacao = services.backtest()
-
-        self.assertEqual(avaliacao['mae'], 0)
-        self.assertEqual(avaliacao['vies'], 0)
-
-    def test_agrega_varias_janelas_em_vez_de_um_holdout_unico(self):
-        _serie_constante(200, 100)
-
-        avaliacao = services.backtest(janelas=6, horizonte=7)
-
-        self.assertEqual(avaliacao['janelas'], 6)
-        self.assertEqual(avaliacao['dias_teste'], 42)
-        self.assertEqual(len(avaliacao['resumo_janelas']), 6)
-
-    def test_cada_janela_treina_apenas_com_o_proprio_passado(self):
-        """Sem vazamento: um degrau só no fim da série não pode ser previsto antes de acontecer."""
-        criar_serie_valores([100] * 180 + [900] * 7)
-        criar_incidente(REFERENCIA)
-
-        avaliacao = services.backtest(janelas=3, horizonte=7)
-
-        # A última janela cai sobre o degrau e erra feio; as anteriores, não.
-        maes = [j['mae'] for j in avaliacao['resumo_janelas']]
-        self.assertEqual(maes[0], 0)
-        self.assertGreater(maes[-1], 500)
-
-    def test_janela_sem_historico_e_descartada(self):
-        """Base curta não deve inventar janelas treinadas em zeros preenchidos."""
-        criar_serie_valores([100] * 40)
-        criar_incidente(REFERENCIA)
-
-        avaliacao = services.backtest(janelas=12, horizonte=7)
-
-        self.assertIsNotNone(avaliacao)
-        self.assertLess(avaliacao['janelas'], 12)
-
-    def test_sem_dados_nao_quebra(self):
-        criar_incidente(REFERENCIA)
-
-        self.assertIsNone(services.backtest())
-        self.assertEqual(services.prever(7), [])
         self.assertIsNone(services.resumo())
 
-    def test_margem_por_dia_semana_respeita_o_tamanho_do_dia(self):
-        """Sábado de 20 incidentes não pode receber a mesma faixa que uma quarta de 100±30."""
-        _serie_por_dia_semana(200, util=100, fim_de_semana=20, ruido=30)
+    def test_calendario_e_picos_ficam_vazios(self):
+        criar_serie_valores([100] * 120)
+        criar_incidente(REFERENCIA)
+        self.assertEqual(services.calendario_risco(), [])
+        self.assertEqual(services.picos(), [])
 
-        margens = services.backtest()['margens']
-
-        self.assertIn('geral', margens)
-        self.assertLess(margens[5], margens[2])
-
-
-class InterpretacaoTest(TesteComCache):
-    def test_cita_o_numero_de_janelas_e_a_comparacao_com_a_baseline(self):
-        # Precisa de erro diferente de zero: numa série perfeita a baseline acerta em cheio e
-        # não há razão contra a qual comparar.
-        _serie_por_dia_semana(200, util=100, fim_de_semana=25, ruido=20)
-
-        texto = services.interpretar(services.resumo())
-
-        self.assertIn('walk-forward', texto)
-        self.assertIn('janelas', texto)
-
-    def test_sem_previsao_devolve_texto_vazio(self):
+    def test_interpretacao_de_nada_e_string_vazia(self):
         self.assertEqual(services.interpretar(None), '')
+
+
+class NarrativaTest(TesteComCache):
+    """A leitura em texto fala com a operação: incerteza e comparação sem jargão de modelo."""
+
+    # A operação não lê nome de algoritmo nem "walk-forward" — esses termos só valem em /modelos/.
+    JARGAO = ('XGBRegressor', 'LGBMRegressor', 'walk-forward', 'baseline', 'MAE', 'RMSE',
+              'classificador', 'feature', 'SHAP')
+
+    def test_cita_faixa_e_a_comparacao_sem_jargao(self):
+        texto = services.interpretar(_previsao_falsa())
+
+        self.assertIn('faixa provável', texto)
+        self.assertIn('semanas seguidas', texto)
+        self.assertIn('mesmo dia da semana anterior', texto)
+
+    def test_narrativa_nao_usa_vocabulario_tecnico(self):
+        texto = services.interpretar(_previsao_falsa(valores=(40, 45, 70)))
+
+        for termo in self.JARGAO:
+            self.assertNotIn(termo, texto, f'{termo!r} não pode aparecer na leitura da operação')
+
+    def test_cita_o_dia_de_maior_pressao(self):
+        texto = services.interpretar(_previsao_falsa(valores=(40, 45, 70)))
+
+        self.assertIn('maior pressão', texto)
+        self.assertIn('80%', texto)
+
+    def test_cita_o_fator_que_mais_pesou_na_previsao(self):
+        texto = services.interpretar(_previsao_falsa())
+
+        self.assertIn('média dos últimos 7 dias', texto)
+        self.assertIn('aumenta', texto)
+
+    def test_nao_promete_ganho_quando_o_modelo_perde_da_baseline(self):
+        """Modelo pior que a baseline tem de aparecer como tal, não sumir do texto."""
+        texto = services.interpretar(_previsao_falsa(mae=5.0, mae_baseline=4.0))
+
+        self.assertIn('5.0', texto)
+        self.assertIn('4.0', texto)
+
+
+class TendenciaTest(TesteComCache):
+    """`tendencia_por_dimensao` é descritivo e continua valendo sem modelo nenhum."""
+
+    def test_compara_duas_metades_do_periodo(self):
+        criar_serie_valores([10] * 14 + [20] * 14, dimensao=DIM.FAMILIA, chave='disco')
+        criar_incidente(REFERENCIA)
+
+        linhas = services.tendencia_por_dimensao(DIM.FAMILIA, dias=28)
+
+        self.assertEqual(len(linhas), 1)
+        self.assertEqual(linhas[0]['chave'], 'disco')
+        self.assertEqual(linhas[0]['recentes'], 20 * 14)
+        self.assertEqual(linhas[0]['variacao'], 100.0)
+
+    def test_sem_base_de_comparacao_a_variacao_e_nula(self):
+        criar_serie_valores([0] * 14 + [5] * 14, dimensao=DIM.FAMILIA, chave='disco')
+        criar_incidente(REFERENCIA)
+
+        linhas = services.tendencia_por_dimensao(DIM.FAMILIA, dias=28)
+
+        self.assertIsNone(linhas[0]['variacao'])

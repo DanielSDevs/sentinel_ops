@@ -15,9 +15,9 @@ urlpatterns = [
     path('contas/', include('apps.accounts.urls')),
     path('inteligencia/', include('apps.intelligence.urls')),
     path('forecast/', include('apps.forecast.urls')),
+    path('modelos/', include('apps.ml.urls')),
     path('monitor/', include('apps.monitor.urls')),
     path('alertas/', include('apps.alerts.urls')),
-    path('copilot/', include('apps.copilot.urls')),
     path('relatorios/', include('apps.reports.urls')),
 ]
 

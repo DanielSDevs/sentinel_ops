@@ -1,0 +1,53 @@
+{
+  "executado_em": "2026-09-12T00:02:45+00:00",
+  "segundos": 383.9,
+  "inicio_regime": "2025-01-13",
+  "fim_dados": "2025-12-31",
+  "incidentes": 120670,
+  "entidades": 55,
+  "linhas_matriz": 122507,
+  "modelos": [
+    {
+      "nome": "model_d1",
+      "titulo": "Previsão D+1",
+      "algoritmo": "XGBRegressor",
+      "metrica_principal": "mae",
+      "valor": 1.8603
+    },
+    {
+      "nome": "model_d7",
+      "titulo": "Previsão D+7",
+      "algoritmo": "LGBMRegressor",
+      "metrica_principal": "mae",
+      "valor": 2.136
+    },
+    {
+      "nome": "model_pico",
+      "titulo": "Risco de pico operacional",
+      "algoritmo": "RandomForestClassifier (calibrado)",
+      "metrica_principal": "pr_auc",
+      "valor": 0.224
+    },
+    {
+      "nome": "model_ola",
+      "titulo": "Risco de violação de OLA",
+      "algoritmo": "LogisticRegression (calibrado)",
+      "metrica_principal": "pr_auc",
+      "valor": 0.2375
+    },
+    {
+      "nome": "model_anomalia",
+      "titulo": "Detecção de anomalias",
+      "algoritmo": "IsolationForest",
+      "metrica_principal": "concordancia_zscore",
+      "valor": 0.017
+    },
+    {
+      "nome": "model_cluster",
+      "titulo": "Clusterização de produtos",
+      "algoritmo": "KMeans",
+      "metrica_principal": "silhueta",
+      "valor": 0.3212
+    }
+  ]
+}

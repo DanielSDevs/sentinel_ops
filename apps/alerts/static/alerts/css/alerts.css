@@ -14,19 +14,17 @@
     justify-content: space-between;
     gap: var(--space-3);
     padding: var(--space-3);
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--blur));
-    -webkit-backdrop-filter: blur(var(--blur));
-    border: 1px solid var(--glass-border);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-left: 3px solid var(--color-info);
     border-radius: var(--radius);
     flex-wrap: wrap;
-    transition: transform 0.25s ease, box-shadow 0.25s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .alert-item:hover {
-    transform: translateX(2px);
-    box-shadow: var(--shadow);
+    background: var(--color-surface-2);
+    border-color: var(--color-border-strong);
 }
 
 .alert-item--danger  { border-left-color: var(--color-danger); }
@@ -45,6 +43,5 @@
 
 .alert-item__meta {
     color: var(--color-text-muted);
-    font-size: 0.8rem;
-    font-family: var(--font-mono);
+    font-size: 0.78rem;
 }

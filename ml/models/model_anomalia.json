@@ -1,0 +1,48 @@
+{
+  "nome": "model_anomalia",
+  "versao_formato": 1,
+  "treinado_em": "2026-09-12T00:09:18+00:00",
+  "titulo": "Detecção de anomalias",
+  "objetivo": "Marcar dias cujo comportamento operacional foge do padrão da própria entidade.",
+  "tipo": "anomalia",
+  "ordem": 5,
+  "notebook": "modelos_ml/06_deteccao_de_anomalias.ipynb",
+  "algoritmo": "IsolationForest",
+  "candidato": "Isolation Forest",
+  "hiperparametros": {
+    "n_estimators": 300,
+    "contamination": 0.05
+  },
+  "alvo": "não supervisionado — sem rótulo de anomalia no dataset",
+  "features": [
+    "lag_0",
+    "media_7",
+    "razao_7_28",
+    "var_7_vs_7",
+    "desvio_7",
+    "cv_28",
+    "criticos_media_7",
+    "share_criticos_7",
+    "p2_media_7",
+    "violacoes_media_7",
+    "taxa_violacao_media_7",
+    "mttr_medio_media_7",
+    "delta_mttr",
+    "itens_distintos_media_7",
+    "familias_distintas_media_7"
+  ],
+  "n_features": 15,
+  "metrica_principal": "concordancia_zscore",
+  "metricas": {
+    "dias_avaliados": 16786,
+    "marcados": 840,
+    "marcados_zscore": 309,
+    "concordancia_zscore": 0.017,
+    "limiar_pontuacao": 0.5575
+  },
+  "observacoes": [
+    "Modelo não supervisionado: o dataset não traz rótulo de anomalia, então não há precisão nem recall a reportar — qualquer número desse tipo seria inventado.",
+    "A concordância com o z-score móvel de 21 dias é o que se pode medir: mostra o quanto o modelo reencontra o que a régua univariada já via."
+  ],
+  "linhas_treino": 16786
+}

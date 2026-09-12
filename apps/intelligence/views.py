@@ -1,6 +1,7 @@
 from django.shortcuts import render
 
 from apps.core.models import FamiliaSinal
+from apps.ml.services import catalogo, inferencia
 
 from .services import anomaly, correlation, insights, risk
 from .services.base import DIM
@@ -22,9 +23,15 @@ def anomaly_detection(request):
         item.correlacoes = anomaly.correlacionar(item)
         item.nome_exibicao = nomes.get(item.chave, item.chave)
 
+    cartao = catalogo.modelo('model_anomalia')
     return render(request, 'intelligence/anomaly.html', {
         'timeline_global': timeline_global,
         'anomalias': achadas,
+        # O Isolation Forest entra ao lado do z-score, não no lugar dele: um olha 15 variáveis
+        # ao mesmo tempo, o outro olha o volume contra a própria média. Onde os dois apontam
+        # junto, a evidência é mais forte; onde divergem, cada um está vendo uma coisa.
+        'anomalias_ml': inferencia.anomalias(dias=45, limite=10),
+        'modelo_anomalia': cartao,
         'dimensao': dimensao,
         'dimensoes': [
             (DIM.FAMILIA, 'Família de sinal'),

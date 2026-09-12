@@ -7,15 +7,14 @@
 <div class="page-header">
     <h1>Anomaly Detection</h1>
     <p class="page-header__subtitle">
-        Cada série é comparada com a <strong>própria baseline</strong>: 40 incidentes/dia pode ser rotina
-        para um produto e um desvio grave para outro. Toda anomalia mostra o esperado, o observado e o desvio.
+        Dias fora do padrão da própria série, com o esperado, o observado e o tamanho do desvio.
     </p>
 </div>
 
 <section class="secao">
     <div class="card">
         <h2 class="card__title">Linha do tempo — volume elegível a KPI</h2>
-        <p class="card__subtitle">Últimos 30 dias. Cinza = normal · âmbar = atenção (z≥2) · vermelho = anomalia (z≥3).</p>
+        <p class="card__subtitle">Últimos 30 dias. Cinza = dentro do normal · âmbar = fora do padrão · vermelho = bem fora do padrão.</p>
         <div style="margin-top:var(--space-3)">
             {% timeline timeline_global %}
         </div>
@@ -62,7 +61,7 @@
                 </div>
                 <div class="insight__campo">
                     <span class="insight__rotulo">Desvio</span>
-                    <span class="insight__texto num">{{ anomalia.desvio_pct }}% &nbsp;(z={{ anomalia.z }})</span>
+                    <span class="insight__texto num" title="quantas vezes o desvio padrão da própria série: {{ anomalia.z }}">{{ anomalia.desvio_pct }}%</span>
                 </div>
             </div>
 
@@ -73,7 +72,7 @@
                     {% for correlacao in anomalia.correlacoes %}
                     <div class="cadeia__item">
                         <span class="cadeia__de">{{ correlacao.nome }}</span>
-                        <span class="cadeia__n">{{ correlacao.valor }} ocorrências · z={{ correlacao.z }}</span>
+                        <span class="cadeia__n" title="quantas vezes o desvio padrão da própria série: {{ correlacao.z }}">{{ correlacao.valor }} ocorrências</span>
                     </div>
                     {% endfor %}
                 </div>
@@ -84,8 +83,66 @@
             {% endif %}
         </div>
         {% empty %}
-        <p class="vazio">Nenhuma anomalia acima do limiar nesta dimensão.</p>
+        <p class="vazio">Nenhum desvio relevante nesta dimensão.</p>
         {% endfor %}
+    </div>
+</section>
+
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">Dias que fogem do padrão olhando tudo junto</h2>
+        {% if modelo_anomalia %}
+        <span class="secao__meta">
+            <a href="{% url 'ml:detalhe' 'model_anomalia' %}">ver detalhes técnicos →</a>
+        </span>
+        {% endif %}
+    </div>
+    <div class="card">
+        <p class="card__subtitle">
+            A lista acima compara uma coisa de cada vez — o volume do dia contra a média daquela
+            área. Aqui a comparação é de quinze sinais ao mesmo tempo (volume, severidade,
+            violações de prazo, tempo de resolução, dispersão, alcance), procurando
+            <strong>combinações</strong> estranhas: um dia de volume perfeitamente normal, mas com
+            severidade e tempo de resolução altos, passa batido na comparação simples e é
+            exatamente o tipo de dia que vale investigar.
+        </p>
+        <p class="card__subtitle">
+            O histórico não diz quais dias foram de fato anormais, então não há taxa de acerto a
+            reportar aqui — qualquer número desses seria inventado. Trate a lista como
+            <strong>sugestão de onde investigar</strong>, não como veredito.
+        </p>
+
+        {% if anomalias_ml %}
+        <div class="table-wrapper" style="margin-top:var(--space-3)">
+            <table class="table">
+                <thead>
+                    <tr><th>Data</th><th>Entidade</th><th>Pontuação</th><th>Volume</th>
+                        <th>Média 7d</th><th>Críticos 7d</th><th>MTTR 7d</th></tr>
+                </thead>
+                <tbody>
+                    {% for item in anomalias_ml %}
+                    <tr>
+                        <td class="mono">{{ item.data|date:"d/m/Y" }}</td>
+                        <td>
+                            <strong>{{ item.chave }}</strong>
+                            <span class="chip chip--neutral">{{ item.dimensao }}</span>
+                        </td>
+                        <td class="num sev-warning">{{ item.pontuacao }}</td>
+                        <td class="num">{{ item.volume }}</td>
+                        <td class="num" style="opacity:.7">{{ item.media_7 }}</td>
+                        <td class="num">{{ item.criticos }}</td>
+                        <td class="num">{{ item.mttr }} min</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <p class="vazio" style="margin-top:var(--space-3)">
+            Modelo de anomalia não treinado — rode
+            <span class="mono">python manage.py treinar_modelos</span>.
+        </p>
+        {% endif %}
     </div>
 </section>
 {% endblock %}

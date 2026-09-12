@@ -16,6 +16,7 @@ from apps.core.models import Incidente
 from apps.core.tempo import referencia_temporal
 from apps.intelligence.services import anomaly, base, insights, risk
 from apps.intelligence.services.base import DIM
+from apps.ml.services import inferencia
 
 
 @dataclass
@@ -84,8 +85,8 @@ def _alertas_de_anomalia():
                 f'{anom.esperado_min}–{anom.esperado_max}.'
             ),
             por_que=(
-                f'Desvio de {anom.desvio_pct:+.0f}% em relação à baseline dos 21 dias anteriores '
-                f'(z-score {anom.z}).'
+                f'Desvio de {anom.desvio_pct:+.0f}% em relação ao padrão dos 21 dias anteriores '
+                f'desta mesma série.'
             ),
             impacto='Pode indicar degradação em curso ou mudança de configuração recente.',
             acao='Verificar se houve mudança/deploy na janela e se o desvio persiste.',
@@ -93,7 +94,7 @@ def _alertas_de_anomalia():
             origem='Anomaly Detection',
             quando=_como_datahora(anom.data),
             confianca=anom.confianca,
-            evidencia='z-score contra baseline móvel da própria série',
+            evidencia='desvio contra o padrão móvel de 21 dias da própria série',
         ))
     return alertas
 
@@ -159,6 +160,84 @@ def _alertas_criticos_ativos():
     return alertas
 
 
+def _alertas_de_pico_previsto(limite=3):
+    """Alertas preventivos vindos dos modelos de ML — o único bloco que fala do futuro.
+
+    A diferença para os demais é o tempo verbal: os outros alertas reagem ao que já aconteceu,
+    este antecipa. Por isso ele carrega sempre a probabilidade e o modelo que a produziu — um
+    alerta sobre o futuro sem a incerteza junto vira promessa.
+    """
+    alertas = []
+    for pico in inferencia.picos_previstos(limite=limite) or []:
+        probabilidade = pico['probabilidade']
+        alertas.append(Alerta(
+            slug=f'pico-{pico["dimensao"]}-{pico["chave"]}-{pico["data"]}',
+            titulo=f'Pico previsto em {pico["chave"]} para {pico["data"]:%d/%m}',
+            o_que=(
+                f'O modelo projeta {pico["valor"]} incidentes elegíveis em {pico["dia_semana"]} '
+                f'({pico["data"]:%d/%m}, D+{pico["horizonte"]}), contra média recente de '
+                f'{pico["media_recente"]}/dia.'
+            ),
+            por_que=(
+                f'Há {probabilidade * 100:.0f}% de chance de esse dia ficar entre os mais '
+                f'carregados já vistos nesta {pico["dimensao"]}'
+                + (f' — {pico["variacao"]:+.0f}% sobre o normal.' if pico['variacao'] is not None else '.')
+            ),
+            impacto=(
+                f'Volume acima do padrão pressiona a fila e aumenta a chance de estouro de OLA. '
+                f'Pela composição recente, cerca de {pico["p2_esperados"]} dos incidentes do dia '
+                f'devem ser P2 ({pico["share_p2"] * 100:.0f}% da carga desta '
+                f'{pico["dimensao"]} na última semana).'
+            ),
+            acao=(
+                f'Reforçar a escala responsável por {pico["chave"]} em {pico["data"]:%d/%m} e '
+                f'zerar a fila pendente na véspera.'
+            ),
+            faixa='critical' if probabilidade >= 0.7 else 'warning',
+            origem='Forecast Engine (ML)',
+            quando=referencia_temporal(),
+            confianca=round(probabilidade * 100),
+            evidencia='Classificador de pico + modelo de volume, treinados em ml/models/',
+            tags=[pico['chave'], f'D+{pico["horizonte"]}'],
+        ))
+    return alertas
+
+
+def _alertas_de_ola_previsto(limite=2):
+    """Risco de perda de OLA em D+1, composto pelo classificador de violação e pelo volume."""
+    alertas = []
+    for item in inferencia.risco_ola(dimensao='equipe', limite=limite) or []:
+        if item['faixa'] == 'baixo':
+            continue
+        fatores = '; '.join(
+            f'{fator["descricao"]} ({fator["sentido"]} o risco)' for fator in item['fatores'][:3]
+        )
+        alertas.append(Alerta(
+            slug=f'ola-{item["chave"]}',
+            titulo=f'Equipe {item["chave"]} com {item["risco"]}% de risco de violar OLA amanhã',
+            o_que=(
+                f'{item["volume_previsto"]} incidentes elegíveis previstos para amanhã, com '
+                f'probabilidade individual de violação de {item["probabilidade_incidente"]}%.'
+            ),
+            por_que=(
+                f'Fatores que o modelo aponta: {fatores}.' if fatores
+                else 'Composição entre volume previsto e probabilidade histórica de violação.'
+            ),
+            impacto=f'{item["violacoes_esperadas"]} violações esperadas no dia.',
+            acao=(
+                f'Revisar capacidade da equipe {item["chave"]} para amanhã e priorizar os '
+                f'chamados P2 na entrada da fila.'
+            ),
+            faixa='critical' if item['faixa'] == 'alto' else 'warning',
+            origem='Modelo de risco de OLA (ML)',
+            quando=referencia_temporal(),
+            confianca=round(item['risco']),
+            evidencia='previsão de risco de OLA × previsão de volume — modelos em ml/models/',
+            tags=[item['chave']],
+        ))
+    return alertas
+
+
 ORDEM_FAIXA = {'critical': 0, 'warning': 1, 'attention': 2}
 
 
@@ -167,6 +246,8 @@ def alertas_ativos():
         *_alertas_criticos_ativos(),
         *_alertas_de_risco(),
         *_alertas_de_anomalia(),
+        *_alertas_de_pico_previsto(),
+        *_alertas_de_ola_previsto(),
     ]
     ruido = _alerta_ruido_vs_sinal()
     if ruido:

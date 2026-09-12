@@ -1,10 +1,26 @@
-# Plataforma web (Django). Para o notebook de análise, veja analytics/requirements.txt.
+# Plataforma web (Django).
 Django>=5.2,<5.3
 
 # Produção (Azure App Service): servidor WSGI e estáticos servidos pela própria aplicação.
 gunicorn>=23.0
 whitenoise>=6.9
 
-# Exigidos por `python manage.py importar_dataset`, que lê o LW-DATASET.xlsx.
+# Leitura do LW-DATASET.xlsx por `python manage.py importar_dataset`.
 pandas>=2.2
 openpyxl>=3.1
+numpy>=1.26
+
+# Machine Learning. Necessário também em produção, e não só no treino: a plataforma carrega os
+# artefatos de `ml/models/` para gerar previsão, risco de OLA, pico e anomalia a cada request.
+# Sem estes pacotes a aplicação sobe, mas as telas de previsão ficam no estado "modelo não
+# treinado" — por desenho, nunca com número inventado no lugar.
+scikit-learn>=1.7
+xgboost>=2.1
+lightgbm>=4.5
+joblib>=1.4
+# Explicabilidade local (contribuições SHAP). O explicador vai serializado dentro do .pkl,
+# então precisa estar instalado para o artefato ser carregado.
+shap>=0.46
+
+# Gráficos dos notebooks de `modelos_ml/` (não usados pela aplicação, que desenha SVG no
+# servidor). Instale com `pip install -r requirements-notebooks.txt` se for rodar os notebooks.

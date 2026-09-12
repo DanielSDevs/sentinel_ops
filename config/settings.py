@@ -69,10 +69,10 @@ INSTALLED_APPS = [
     'apps.core',
     'apps.accounts',
     'apps.intelligence',
+    'apps.ml',
     'apps.forecast',
     'apps.monitor',
     'apps.alerts',
-    'apps.copilot',
     'apps.reports',
 ]
 

@@ -7,8 +7,7 @@
 <div class="page-header">
     <h1>Service Health Map</h1>
     <p class="page-header__subtitle">
-        Saúde por produto, ordenada do pior para o melhor — quem precisa de atenção aparece primeiro.
-        Os códigos de produto são anonimizados pela Locaweb no dataset.
+        Saúde por produto, do pior para o melhor. Os códigos são anonimizados pela Locaweb.
     </p>
 </div>
 
@@ -22,6 +21,63 @@
         Produtos com menos de 5 incidentes no período não são pontuados.
     </div>
 </details>
+
+{% if comportamento %}
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">Quais produtos se comportam do mesmo jeito?</h2>
+        <span class="secao__meta">
+            <a href="{% url 'ml:detalhe' 'model_cluster' %}">ver detalhes técnicos &rarr;</a>
+        </span>
+    </div>
+
+    {% if comportamento.contraste %}
+    <div class="insight insight--attention" style="margin-bottom:var(--space-3)">
+        <div class="insight__campo">
+            <span class="insight__rotulo">A diferença que muda o tratamento</span>
+            <span class="insight__texto">
+                Os produtos do grupo <strong>{{ comportamento.contraste.lento }}</strong> levam
+                <strong>{{ comportamento.contraste.vezes }}&times; mais tempo</strong> para serem
+                resolvidos que os do <strong>{{ comportamento.contraste.rapido }}</strong>
+                ({{ comportamento.contraste.mttr_lento }} min contra
+                {{ comportamento.contraste.mttr_rapido }} min), mesmo recebendo muito menos
+                chamados. Volume baixo não significa problema fácil.
+            </span>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="grid grid--2">
+        {% for grupo in comportamento.grupos %}
+        <div class="card">
+            <div class="risco__topo">
+                <span class="card__title" style="margin:0">{{ grupo.titulo }}</span>
+                <span class="chip chip--neutral">{{ grupo.quantidade }} produtos</span>
+            </div>
+            <p class="card__subtitle" style="margin-top:var(--space-2)">{{ grupo.descricao }}</p>
+
+            <div class="risco__medidas" style="margin-top:var(--space-3)">
+                {% for medida in grupo.medidas %}
+                <span class="risco__medida">{{ medida.rotulo }} <strong>{{ medida.valor }}</strong></span>
+                {% endfor %}
+            </div>
+
+            <div style="margin-top:var(--space-3);display:flex;flex-wrap:wrap;gap:var(--space-1)">
+                {% for produto in grupo.produtos %}
+                <a class="chip chip--neutral" href="{% url 'monitor:detalhe_servico' produto %}">{{ produto }}</a>
+                {% endfor %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">Saúde produto a produto</h2>
+    </div>
+</section>
 
 <div class="grid grid--3">
     {% for servico in servicos %}

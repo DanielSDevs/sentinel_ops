@@ -5,7 +5,7 @@ from apps.core.models import Incidente
 from apps.intelligence.services import anomaly, similarity
 from apps.intelligence.services.base import DIM
 
-from . import services, simulacao
+from . import perfis, services, simulacao
 
 
 def live_operations(request):
@@ -24,6 +24,7 @@ def live_operations(request):
 def service_health(request):
     return render(request, 'monitor/service_health.html', {
         'servicos': services.mapa_saude_servicos(limite=18),
+        'comportamento': perfis.grupos_de_comportamento(),
     })
 
 

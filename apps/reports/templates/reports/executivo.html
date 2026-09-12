@@ -58,6 +58,60 @@
     </div>
 </section>
 
+{% if previsao %}
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">O que vem pela frente</h2>
+        <span class="secao__meta">previsão de modelos treinados, com a incerteza declarada</span>
+    </div>
+    <div class="card">
+        <div class="tiles">
+            <div class="tile">
+                <span class="tile__label">Previsão D+1</span>
+                <span class="tile__valor">{{ previsao.d1.valor }}</span>
+                <span class="tile__sub">faixa {{ previsao.d1.minimo }}–{{ previsao.d1.maximo }} incidentes</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">Próximos 7 dias</span>
+                <span class="tile__valor">{{ previsao.d7_total }}</span>
+                <span class="tile__sub">faixa {{ previsao.d7_min }}–{{ previsao.d7_max }}</span>
+            </div>
+            {% if risco_ola %}
+            <div class="tile">
+                <span class="tile__label">Risco de perda de OLA</span>
+                <span class="tile__valor sev-{% if risco_ola.faixa == 'alto' %}critical{% elif risco_ola.faixa == 'medio' %}warning{% else %}healthy{% endif %}">
+                    {{ risco_ola.risco }}%
+                </span>
+                <span class="tile__sub">{{ risco_ola.violacoes_esperadas }} violações esperadas amanhã</span>
+            </div>
+            {% endif %}
+            <div class="tile">
+                <span class="tile__label">Picos previstos</span>
+                <span class="tile__valor {% if picos %}sev-warning{% endif %}">{{ picos|length }}</span>
+                <span class="tile__sub">áreas com pressão acima do padrão em 7 dias</span>
+            </div>
+        </div>
+        <p class="briefing__texto" style="margin-top:var(--space-3)">{{ interpretacao_previsao }}</p>
+        {% if picos %}
+        <div class="pilha" style="margin-top:var(--space-3)">
+            {% for pico in picos %}
+            <div class="insight insight--warning">
+                <div class="insight__campo">
+                    <span class="insight__rotulo">{{ pico.chave }} · {{ pico.data|date:"d/m" }}</span>
+                    <span class="insight__texto">
+                        {{ pico.valor }} incidentes previstos contra média de
+                        {{ pico.media_recente }}/dia, com probabilidade
+                        {{ pico.probabilidade|floatformat:2 }} de entrar no topo 20% histórico.
+                    </span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
 <section class="secao">
     <div class="secao__cabecalho"><h2 class="secao__titulo">Serviços que exigem atenção executiva</h2></div>
     <div class="pilha">
@@ -71,7 +125,7 @@
             <div class="risco__acao">{{ risco.acao }}</div>
         </div>
         {% empty %}
-        <p class="vazio">Nenhum serviço acima do limiar de atenção executiva.</p>
+        <p class="vazio">Nenhum serviço exigindo atenção executiva no momento.</p>
         {% endfor %}
     </div>
 </section>

@@ -1,0 +1,114 @@
+{
+  "nome": "model_cluster",
+  "versao_formato": 1,
+  "treinado_em": "2026-09-12T00:04:22+00:00",
+  "titulo": "Clusterização de produtos",
+  "objetivo": "Agrupar produtos com comportamento operacional semelhante.",
+  "tipo": "clusterizacao",
+  "ordem": 6,
+  "notebook": "modelos_ml/02_engenharia_de_features.ipynb",
+  "algoritmo": "KMeans",
+  "candidato": "K-Means",
+  "hiperparametros": {
+    "n_clusters": 2,
+    "n_init": 20
+  },
+  "alvo": "não supervisionado — agrupamento por perfil operacional",
+  "features": [
+    "volume_medio",
+    "share_criticos",
+    "taxa_violacao",
+    "mttr",
+    "dias_ativos",
+    "share_ruido",
+    "instabilidade"
+  ],
+  "n_features": 7,
+  "metrica_principal": "silhueta",
+  "metricas": {
+    "silhueta": 0.3212,
+    "k_escolhido": 2,
+    "produtos": 20,
+    "busca_k": [
+      {
+        "k": 2,
+        "silhueta": 0.3212,
+        "inercia": 90.47
+      },
+      {
+        "k": 3,
+        "silhueta": 0.2521,
+        "inercia": 71.36
+      },
+      {
+        "k": 4,
+        "silhueta": 0.2744,
+        "inercia": 53.47
+      },
+      {
+        "k": 5,
+        "silhueta": 0.2834,
+        "inercia": 38.15
+      },
+      {
+        "k": 6,
+        "silhueta": 0.2717,
+        "inercia": 29.36
+      },
+      {
+        "k": 7,
+        "silhueta": 0.2483,
+        "inercia": 23.23
+      }
+    ]
+  },
+  "grupos": {
+    "0": {
+      "produtos": [
+        "lcsi",
+        "lcsp",
+        "lemg",
+        "lemn",
+        "lexc",
+        "lgoa",
+        "lrdo",
+        "lrel",
+        "lsaa",
+        "lsg2",
+        "lsmt",
+        "lssl",
+        "lvps",
+        "lwpl"
+      ],
+      "perfil": {
+        "volume_medio": 1.083,
+        "share_criticos": 0.16,
+        "taxa_violacao": 0.017,
+        "mttr": 7091.204,
+        "dias_ativos": 0.492,
+        "share_ruido": 0.334,
+        "instabilidade": 1.496
+      }
+    },
+    "1": {
+      "produtos": [
+        "lcem",
+        "lcho",
+        "lhco",
+        "lhvp",
+        "lrev",
+        "lsin"
+      ],
+      "perfil": {
+        "volume_medio": 8.742,
+        "share_criticos": 0.305,
+        "taxa_violacao": 0.008,
+        "mttr": 1943.778,
+        "dias_ativos": 0.925,
+        "share_ruido": 0.715,
+        "instabilidade": 0.705
+      }
+    }
+  },
+  "linhas_treino": 20
+}

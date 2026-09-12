@@ -3,7 +3,7 @@
 .auth-card {
     max-width: 420px;
     margin: var(--space-5) auto;
-    box-shadow: var(--shadow-lg), 0 0 60px rgba(var(--color-primary-rgb), 0.08);
+    box-shadow: var(--shadow);
 }
 
 .auth-card h1 {

@@ -10,9 +10,9 @@
     font-family: var(--font-mono);
     font-size: 0.72rem;
     color: var(--color-text-muted);
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
-    border-radius: 999px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
     padding: 0.2rem 0.7rem;
     white-space: nowrap;
 }
@@ -23,7 +23,6 @@
     height: 6px;
     border-radius: 50%;
     background: var(--sev-healthy);
-    box-shadow: 0 0 8px var(--sev-healthy);
 }
 
 /* ---------- Severidade ---------- */
@@ -38,10 +37,9 @@
     display: inline-flex;
     align-items: center;
     gap: 0.35rem;
-    padding: 0.15rem 0.6rem;
-    border-radius: 999px;
-    font-family: var(--font-mono);
-    font-size: 0.68rem;
+    padding: 0.1rem 0.45rem;
+    border-radius: var(--radius-sm);
+    font-size: 0.66rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.04em;
@@ -73,7 +71,7 @@
 }
 
 .dial__svg { flex-shrink: 0; }
-.dial__track { stroke: rgba(255, 255, 255, 0.07); }
+.dial__track { stroke: var(--color-surface-3); }
 .dial__value { stroke-linecap: round; transition: stroke-dashoffset 1.1s cubic-bezier(0.16, 1, 0.3, 1); }
 .dial__num {
     font-family: var(--font-mono);
@@ -98,7 +96,7 @@
 .dial__ofensor {
     margin-top: var(--space-2);
     padding-top: var(--space-2);
-    border-top: 1px solid var(--glass-border);
+    border-top: 1px solid var(--color-border);
     font-size: 0.8rem;
     color: var(--color-text-muted);
     line-height: 1.5;
@@ -121,8 +119,8 @@
 
 .contrib__bar {
     height: 6px;
-    background: rgba(255, 255, 255, 0.06);
-    border-radius: 3px;
+    background: var(--color-surface-3);
+    border-radius: 2px;
     overflow: hidden;
 }
 
@@ -144,7 +142,7 @@
 
 .explain {
     margin-top: var(--space-2);
-    border-top: 1px dashed var(--glass-border);
+    border-top: 1px dashed var(--color-border);
     padding-top: var(--space-2);
 }
 
@@ -175,7 +173,8 @@
 .explain__formula {
     font-family: var(--font-mono);
     font-size: 0.74rem;
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-sm);
     padding: var(--space-2);
     margin-top: var(--space-1);
@@ -219,7 +218,7 @@
     gap: var(--space-2);
     align-items: flex-start;
     padding: var(--space-2);
-    background: var(--glass-bg);
+    background: var(--color-surface);
     border-radius: var(--radius-sm);
     border-left: 2px solid var(--sev-attention);
     font-size: 0.85rem;
@@ -237,8 +236,8 @@
 .tiles { display: grid; gap: var(--space-3); grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); }
 
 .tile {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius);
     padding: var(--space-3);
     display: flex;
@@ -267,7 +266,7 @@
 
 .spark { display: block; overflow: visible; }
 .spark__linha { fill: none; stroke-width: 1.6; stroke-linejoin: round; stroke-linecap: round; }
-.spark__area { opacity: 0.16; }
+.spark__area { opacity: 0.12; }
 .spark__ponto { r: 2.6; }
 
 /* ---------- Timeline de estados ---------- */
@@ -283,7 +282,7 @@
 
 .timeline__barra--normal   { background: var(--sev-neutral); opacity: 0.5; }
 .timeline__barra--atencao  { background: var(--sev-attention); }
-.timeline__barra--anomalia { background: var(--sev-critical); box-shadow: 0 0 8px var(--sev-critical); }
+.timeline__barra--anomalia { background: var(--sev-critical); }
 
 .timeline__legenda {
     display: flex;
@@ -301,21 +300,21 @@
     flex-direction: column;
     gap: var(--space-2);
     padding: var(--space-3);
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-left: 3px solid var(--sev-neutral);
     border-radius: var(--radius);
-    transition: transform 0.2s ease, border-color 0.2s ease;
+    transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
-.risco:hover { transform: translateX(2px); }
+.risco:hover { border-color: var(--color-border-strong); background: var(--color-surface-2); }
 .risco--critical { border-left-color: var(--sev-critical); }
 .risco--warning  { border-left-color: var(--sev-warning); }
 .risco--attention{ border-left-color: var(--sev-attention); }
 .risco--healthy  { border-left-color: var(--sev-healthy); }
 
 .risco__topo { display: flex; align-items: center; gap: var(--space-2); flex-wrap: wrap; }
-.risco__nome { font-weight: 600; font-family: var(--font-mono); }
+.risco__nome { font-weight: 600; }
 .risco__score { margin-left: auto; font-family: var(--font-mono); font-weight: 700; font-size: 1.1rem; }
 
 .risco__medidas { display: flex; gap: var(--space-4); flex-wrap: wrap; font-size: 0.78rem; color: var(--color-text-muted); }
@@ -328,15 +327,15 @@
 .risco__acao {
     font-size: 0.82rem;
     padding: var(--space-2);
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--color-surface-2);
     border-radius: var(--radius-sm);
 }
 
 /* ---------- Insight / alerta estruturado ---------- */
 
 .insight {
-    background: var(--glass-bg);
-    border: 1px solid var(--glass-border);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-left: 3px solid var(--sev-neutral);
     border-radius: var(--radius);
     padding: var(--space-3);
@@ -376,7 +375,7 @@
     justify-content: center;
     font-family: var(--font-mono);
     font-size: 0.7rem;
-    border: 1px solid var(--glass-border);
+    border: 1px solid var(--color-border);
 }
 .heat__dia { font-size: 0.62rem; color: var(--color-text-muted); }
 .heat__val { font-weight: 700; }
@@ -391,8 +390,8 @@
 /* ---------- Grafo de correlação ---------- */
 
 .grafo__no-raiz { fill: var(--sev-critical-dim); stroke: var(--sev-critical); stroke-width: 1.5; }
-.grafo__no { fill: var(--glass-strong-bg); stroke: var(--glass-strong-border); stroke-width: 1; }
-.grafo__aresta { stroke: var(--color-text-muted); opacity: 0.35; }
+.grafo__no { fill: var(--color-surface-2); stroke: var(--color-border-strong); stroke-width: 1; }
+.grafo__aresta { stroke: var(--sev-neutral); opacity: 0.45; }
 .grafo__rotulo { font-family: var(--font-mono); font-size: 10px; fill: var(--color-text); text-anchor: middle; }
 .grafo__peso { font-family: var(--font-mono); font-size: 9px; fill: var(--color-text-muted); text-anchor: middle; }
 
@@ -405,11 +404,11 @@
     gap: var(--space-2);
     font-size: 0.84rem;
     padding: var(--space-2);
-    background: var(--glass-bg);
+    background: var(--color-surface);
     border-radius: var(--radius-sm);
-    border: 1px solid var(--glass-border);
+    border: 1px solid var(--color-border);
 }
-.cadeia__de, .cadeia__para { font-family: var(--font-mono); font-size: 0.8rem; }
+.cadeia__de, .cadeia__para { font-size: 0.82rem; }
 .cadeia__seta { color: var(--sev-warning); }
 .cadeia__n { margin-left: auto; font-family: var(--font-mono); font-size: 0.76rem; color: var(--color-text-muted); }
 
@@ -427,9 +426,9 @@
 }
 
 .secao__titulo {
-    font-size: 0.78rem;
+    font-size: 0.74rem;
     text-transform: uppercase;
-    letter-spacing: 0.07em;
+    letter-spacing: 0.06em;
     color: var(--color-text-muted);
     font-weight: 700;
     margin: 0;
@@ -442,7 +441,7 @@
     text-align: center;
     color: var(--color-text-muted);
     font-size: 0.88rem;
-    border: 1px dashed var(--glass-border);
+    border: 1px dashed var(--color-border);
     border-radius: var(--radius);
 }
 
@@ -454,4 +453,100 @@
 @media (max-width: 700px) {
     .contrib__row { grid-template-columns: 1fr auto; }
     .contrib__bar { grid-column: 1 / -1; }
+}
+
+/* ---------------------------------------------------------------------------
+   Gráfico de previsão (histórico + previsão ML + faixa) e contribuições SHAP.
+   SVG montado no servidor, como o resto dos gráficos da plataforma.
+   --------------------------------------------------------------------------- */
+
+.graf-wrap { position: relative; }
+
+.graf { display: block; width: 100%; height: auto; overflow: visible; }
+
+/* Rótulo do corte entre observado e previsto. */
+.graf__marco {
+    font-size: 9px;
+    fill: var(--color-text-muted);
+    letter-spacing: 0.02em;
+}
+
+/* Faixas de captura: uma por dia, invisíveis. O cursor segue o dia mais próximo do ponteiro
+   em vez de exigir mira sobre a linha, que a 250px de altura é impossível de acertar. */
+.graf__alvo { fill: transparent; cursor: crosshair; }
+
+.graf__cursor line { stroke: var(--color-border-strong); stroke-width: 1; }
+.graf__cursor circle { fill: var(--color-surface); stroke-width: 2; }
+
+/* Legenda flutuante. Fica em HTML, não em SVG: texto com fundo e canto arredondado dentro de
+   SVG exigiria medir o texto na mão para desenhar o retângulo atrás. */
+.graf-tip {
+    position: absolute;
+    z-index: 2;
+    pointer-events: none;
+    transform: translate(-50%, -100%);
+    background: var(--color-surface-2);
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    padding: var(--space-2);
+    font-size: 0.76rem;
+    line-height: 1.45;
+    white-space: nowrap;
+}
+
+.graf-tip__dia {
+    font-family: var(--font-mono);
+    font-weight: 600;
+    color: var(--color-text);
+}
+
+.graf-tip__linha { color: var(--color-text-muted); }
+.graf-tip__linha strong { color: var(--color-text); font-family: var(--font-mono); }
+.graf__linha { fill: none; stroke-width: 2; stroke-linejoin: round; stroke-linecap: round; }
+.graf__linha--previsao { stroke-dasharray: 5 3; stroke-width: 2.5; }
+.graf__faixa { opacity: 0.14; }
+.graf__corte { stroke: var(--color-border-strong); stroke-width: 1; stroke-dasharray: 3 3; }
+.graf__grade { stroke: var(--color-border); stroke-width: 1; }
+.graf__rotulo, .graf__eixo {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    fill: var(--color-text-muted);
+}
+
+.graf-legenda { display: flex; gap: var(--space-3); font-size: 0.76rem; color: var(--color-text-muted); }
+.graf-legenda__item { display: flex; align-items: center; gap: 6px; }
+.graf-legenda__marca { width: 14px; height: 3px; border-radius: 2px; display: inline-block; }
+
+.shap { display: flex; flex-direction: column; gap: var(--space-2); }
+.shap__row {
+    display: grid;
+    grid-template-columns: minmax(9rem, 16rem) 1fr auto;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: 0.8rem;
+}
+.shap__bar {
+    position: relative;
+    height: 12px;
+    background: var(--color-surface-3);
+    border-radius: 2px;
+    overflow: hidden;
+}
+.graf-legenda__marca--tracejada { background: none; border-top: 3px dashed currentColor; }
+
+.shap__zero {
+    position: absolute;
+    left: 50%;
+    top: 0;
+    bottom: 0;
+    width: 1px;
+    background: var(--color-border);
+}
+.shap__fill { position: absolute; top: 0; bottom: 0; opacity: 0.9; }
+.shap__valor { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 0.76rem; }
+
+@media (max-width: 700px) {
+    .shap__row { grid-template-columns: 1fr auto; }
+    .shap__bar { grid-column: 1 / -1; }
 }

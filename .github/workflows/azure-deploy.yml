@@ -52,8 +52,11 @@ jobs:
 
       - name: Empacotar
         run: |
+          # `ml/models` e `ml/src` vão no pacote: são o que a aplicação carrega para prever.
+          # Notebooks e exportações intermediárias, não — só pesam o deploy.
           zip -qr release.zip . \
-            -x '.git/*' '.github/*' 'analytics/*' 'documentos/*' '*__pycache__*' '_verif.py'
+            -x '.git/*' '.github/*' 'analytics/*' 'documentos/*' '*__pycache__*' '_verif.py' \
+               'modelos_ml/*' 'ml/data/*'
 
       - uses: actions/upload-artifact@v4
         with:

@@ -1,0 +1,362 @@
+{% extends 'base.html' %}
+{% load modelos %}
+
+{% block title %}SentinelOps — {{ cartao.titulo }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>{{ cartao.titulo }}</h1>
+    <p class="page-header__subtitle">
+        {{ cartao.objetivo }}
+        <br>
+        Algoritmo vencedor: <strong>{{ cartao.algoritmo }}</strong> ·
+        alvo: <span class="mono">{{ cartao.alvo }}</span> ·
+        treinado em {{ cartao.treinado_em|slice:":10" }}
+        {% if cartao.notebook %}· notebook <span class="mono">{{ cartao.notebook.caminho }}</span>{% endif %}
+    </p>
+</div>
+
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Resultado no conjunto de teste</h2></div>
+    <div class="tiles">
+        {% if cartao.tipo == 'regressao' %}
+            <div class="tile">
+                <span class="tile__label">MAE</span>
+                <span class="tile__valor">{{ cartao.metricas.teste.mae }}</span>
+                <span class="tile__sub">incidentes de erro, em média</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">RMSE</span>
+                <span class="tile__valor">{{ cartao.metricas.teste.rmse }}</span>
+                <span class="tile__sub">pune erro grande</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">MASE</span>
+                <span class="tile__valor {% if cartao.metricas.teste.mase < 1 %}sev-healthy{% else %}sev-warning{% endif %}">
+                    {{ cartao.metricas.teste.mase }}
+                </span>
+                <span class="tile__sub">abaixo de 1 = melhor que a baseline</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">R²</span>
+                <span class="tile__valor">{{ cartao.metricas.teste.r2 }}</span>
+                <span class="tile__sub">variação explicada</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">Viés</span>
+                <span class="tile__valor">{{ cartao.metricas.teste.vies }}</span>
+                <span class="tile__sub">negativo = superestima</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">Ganho vs. baseline</span>
+                <span class="tile__valor {% if cartao.ganho_vs_baseline > 0 %}sev-healthy{% else %}sev-critical{% endif %}">
+                    {{ cartao.ganho_vs_baseline|sinal }}{{ cartao.ganho_vs_baseline }}%
+                </span>
+                <span class="tile__sub">MAE da baseline: {{ cartao.baseline.mae_teste }}</span>
+            </div>
+        {% elif cartao.tipo == 'classificacao' %}
+            <div class="tile">
+                <span class="tile__label">PR-AUC</span>
+                <span class="tile__valor">{{ cartao.metricas.teste.pr_auc }}</span>
+                <span class="tile__sub">taxa-base: {{ cartao.metricas.teste.taxa_base }}</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">ROC-AUC</span>
+                <span class="tile__valor">{{ cartao.metricas.teste.roc_auc }}</span>
+                <span class="tile__sub">0,5 = acaso</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">F1</span>
+                <span class="tile__valor">{{ cartao.metricas.teste.f1 }}</span>
+                <span class="tile__sub">limiar {{ cartao.limiar_decisao }}, escolhido na validação</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">Precisão</span>
+                <span class="tile__valor">{{ cartao.metricas.teste.precision }}</span>
+                <span class="tile__sub">dos alertas, quantos procediam</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">Recall</span>
+                <span class="tile__valor">{{ cartao.metricas.teste.recall }}</span>
+                <span class="tile__sub">dos casos reais, quantos foram pegos</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">Brier</span>
+                <span class="tile__valor">{{ cartao.metricas.teste.brier }}</span>
+                <span class="tile__sub">calibração (menor é melhor)</span>
+            </div>
+        {% else %}
+            {% for chave, valor in cartao.metricas.items %}
+                {% if chave != 'busca_k' %}
+                <div class="tile">
+                    <span class="tile__label">{{ chave }}</span>
+                    <span class="tile__valor">{{ valor }}</span>
+                </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+    </div>
+
+    {% if cartao.metricas.teste.matriz_confusao %}
+    <div class="card" style="margin-top:var(--space-3)">
+        <h3 class="card__title">Matriz de confusão no teste</h3>
+        <div class="table-wrapper" style="margin-top:var(--space-2)">
+            <table class="table">
+                <thead><tr><th></th><th>Previsto: não</th><th>Previsto: sim</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <th>Real: não</th>
+                        <td class="num">{{ cartao.metricas.teste.matriz_confusao.vn }}</td>
+                        <td class="num sev-warning">{{ cartao.metricas.teste.matriz_confusao.fp }}</td>
+                    </tr>
+                    <tr>
+                        <th>Real: sim</th>
+                        <td class="num sev-critical">{{ cartao.metricas.teste.matriz_confusao.fn }}</td>
+                        <td class="num sev-healthy">{{ cartao.metricas.teste.matriz_confusao.vp }}</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        {% if cartao.desbalanceamento %}
+        <p class="card__subtitle" style="margin-top:var(--space-2)">
+            Classe rara: {{ cartao.desbalanceamento.taxa_positivos }} de taxa de positivos
+            ({{ cartao.desbalanceamento.positivos_treino }} casos no treino), compensada com peso
+            {{ cartao.desbalanceamento.peso_positivo }} na classe positiva. Com essa proporção,
+            acurácia não diz nada — um modelo que nunca alerta já acerta quase tudo.
+        </p>
+        {% endif %}
+    </div>
+    {% endif %}
+
+    {% if cartao.observacoes %}
+    <div class="insight insight--warning" style="margin-top:var(--space-3)">
+        {% for observacao in cartao.observacoes %}
+        <div class="insight__campo"><span class="insight__texto">{{ observacao }}</span></div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</section>
+
+{% if cartao.metricas.teste_por_dimensao %}
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">Erro por tipo de entidade</h2>
+        <span class="secao__meta">o MAE médio do painel mistura escalas muito diferentes</span>
+    </div>
+    <div class="card">
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr><th>Entidade</th><th>MAE</th><th>RMSE</th><th>MAPE</th><th>R²</th>
+                        <th>MAE baseline</th><th>Ganho</th><th>Linhas</th></tr>
+                </thead>
+                <tbody>
+                    {% for dimensao, m in cartao.metricas.teste_por_dimensao.items %}
+                    <tr>
+                        <td><strong>{{ dimensao }}</strong></td>
+                        <td class="num">{{ m.mae }}</td>
+                        <td class="num">{{ m.rmse }}</td>
+                        <td class="num">{{ m.mape|floatformat:1 }}%</td>
+                        <td class="num">{{ m.r2 }}</td>
+                        <td class="num">{{ m.mae_baseline }}</td>
+                        <td class="num {% if m.ganho_vs_baseline > 0 %}sev-healthy{% else %}sev-critical{% endif %}">
+                            {{ m.ganho_vs_baseline|floatformat:1 }}%
+                        </td>
+                        <td class="num">{{ m.n }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% if cartao.metricas.walk_forward %}
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">Walk-forward — {{ cartao.metricas.walk_forward.janelas }} origens semanais</h2>
+        <span class="secao__meta">cada origem treina só com o próprio passado</span>
+    </div>
+    <div class="card">
+        <p class="card__subtitle">
+            Uma única partição de teste mede um recorte; aqui o modelo é retreinado a cada semana
+            e avaliado nos 7 dias seguintes, repetidamente. É a leitura mais próxima do ciclo real
+            da plataforma — e a que revela se o erro do teste foi típico ou azar de calendário.
+        </p>
+        <div class="tiles" style="margin-top:var(--space-3)">
+            <div class="tile">
+                <span class="tile__label">MAE médio</span>
+                <span class="tile__valor">{{ cartao.metricas.walk_forward.mae }}</span>
+                <span class="tile__sub">± {{ cartao.metricas.walk_forward.dispersao_mae }} entre janelas</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">MAE da baseline</span>
+                <span class="tile__valor sev-neutral">{{ cartao.metricas.walk_forward.mae_baseline }}</span>
+                <span class="tile__sub">mesmo dia da semana anterior</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">MASE</span>
+                <span class="tile__valor {% if cartao.metricas.walk_forward.mase < 1 %}sev-healthy{% else %}sev-warning{% endif %}">
+                    {{ cartao.metricas.walk_forward.mase }}
+                </span>
+                <span class="tile__sub">erro relativo à baseline</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">Vitórias sobre a baseline</span>
+                <span class="tile__valor">
+                    {{ cartao.metricas.walk_forward.vitorias_sobre_baseline }}/{{ cartao.metricas.walk_forward.janelas }}
+                </span>
+                <span class="tile__sub">janelas em que o modelo errou menos</span>
+            </div>
+        </div>
+        <div class="table-wrapper" style="margin-top:var(--space-3)">
+            <table class="table">
+                <thead><tr><th>Origem</th><th>MAE do modelo</th><th>MAE da baseline</th><th></th></tr></thead>
+                <tbody>
+                    {% for janela in cartao.metricas.walk_forward.por_origem %}
+                    <tr>
+                        <td class="mono">{{ janela.origem }}</td>
+                        <td class="num">{{ janela.mae }}</td>
+                        <td class="num">{{ janela.mae_baseline }}</td>
+                        <td>
+                            {% if janela.mae < janela.mae_baseline %}
+                            <span class="chip chip--healthy">modelo vence</span>
+                            {% else %}
+                            <span class="chip chip--warning">baseline vence</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% if comparacao %}
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">Comparação entre algoritmos</h2>
+        <span class="secao__meta">medida na validação — é o que escolheu o vencedor</span>
+    </div>
+    <div class="card">
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Candidato</th><th>Tipo</th><th>Algoritmo</th>
+                        {% for metrica in metricas_comparadas %}<th>{{ metrica|upper }}</th>{% endfor %}
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for linha in comparacao %}
+                    <tr {% if linha.vencedor %}style="background:var(--color-surface-2)"{% endif %}>
+                        <td><strong>{{ linha.candidato }}</strong></td>
+                        <td>
+                            <span class="chip chip--{% if linha.tipo == 'baseline' %}neutral{% else %}healthy{% endif %}">
+                                {{ linha.tipo }}
+                            </span>
+                        </td>
+                        <td class="mono" style="font-size:.76rem">{{ linha.algoritmo }}</td>
+                        {% for metrica in metricas_comparadas %}
+                        <td class="num">{{ linha.metricas|chave_de:metrica|default:"—" }}</td>
+                        {% endfor %}
+                        <td>{% if linha.vencedor %}<span class="chip chip--healthy">vencedor</span>{% endif %}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="card__subtitle" style="margin-top:var(--space-3)">
+            Hiperparâmetros do vencedor:
+            <span class="mono">{{ cartao.hiperparametros }}</span>
+        </p>
+    </div>
+</section>
+{% endif %}
+
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Partições temporais</h2></div>
+    <div class="card">
+        <p class="card__subtitle">
+            O corte é cronológico e feito pela data-alvo: nenhum dia do teste aparece como alvo de
+            uma linha de treino, em nenhum horizonte. A validação escolheu o modelo; o teste só foi
+            lido no fim.
+        </p>
+        <div class="table-wrapper" style="margin-top:var(--space-3)">
+            <table class="table">
+                <thead><tr><th>Partição</th><th>Período</th><th>Linhas</th><th>Positivos</th></tr></thead>
+                <tbody>
+                    {% for nome, particao in cartao.particoes.items %}
+                    <tr>
+                        <td><strong>{{ nome }}</strong></td>
+                        <td class="mono">{{ particao.inicio }} → {{ particao.fim }}</td>
+                        <td class="num">{{ particao.linhas }}</td>
+                        <td class="num">{{ particao.positivos|default:"—" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+
+{% if permutacao or importancias %}
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Explicabilidade — o que o modelo usa</h2></div>
+    <div class="insight__grid">
+        {% if permutacao %}
+        <div class="card">
+            <h3 class="card__title">Importância por permutação</h3>
+            <p class="card__subtitle">
+                Quanto a métrica piora quando a coluna é embaralhada, medido na validação.
+                Responde "sem essa feature, o modelo perde o quê?".
+            </p>
+            <div class="contrib" style="margin-top:var(--space-3)">
+                {% for item in permutacao %}
+                <div class="contrib__row">
+                    <span class="contrib__nome">{{ item.descricao }}</span>
+                    {% barra_metrica item.queda_metrica maximo_permutacao %}
+                    <span class="contrib__valor">{{ item.queda_metrica|floatformat:4 }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        {% if importancias %}
+        <div class="card">
+            <h3 class="card__title">Importância interna do modelo</h3>
+            <p class="card__subtitle">
+                Ganho acumulado nas divisões das árvores (ou coeficiente padronizado, no modelo
+                linear). Barata, mas tende a favorecer variáveis com muitos valores distintos.
+            </p>
+            <div class="contrib" style="margin-top:var(--space-3)">
+                {% for item in importancias %}
+                <div class="contrib__row">
+                    <span class="contrib__nome">{{ item.descricao }}</span>
+                    {% barra_metrica item.importancia maximo_importancia 'var(--sev-neutral)' %}
+                    <span class="contrib__valor">{{ item.importancia|floatformat:3 }}</span>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</section>
+{% endif %}
+
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Features usadas ({{ cartao.n_features }})</h2></div>
+    <div class="card">
+        <div class="linha-meta" style="flex-wrap:wrap;gap:var(--space-1)">
+            {% for feature in cartao.features %}
+            <span class="chip chip--neutral mono" style="font-size:.72rem">{{ feature }}</span>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -7,9 +7,7 @@
 <div class="page-header">
     <h1>Operational Insights</h1>
     <p class="page-header__subtitle">
-        A plataforma não mostra tudo o que sabe. Cada insight recebe um score de prioridade e só o
-        topo chega aqui — mostrar tudo produz fadiga de alerta e faz o operador ignorar justamente
-        o aviso que importava.
+        Achados ordenados por prioridade calculada — só o topo aparece aqui.
     </p>
 </div>
 
@@ -54,7 +52,7 @@
         {% endif %}
     </div>
     {% empty %}
-    <p class="vazio">Nenhum insight acima do limiar de relevância no momento.</p>
+    <p class="vazio">Nada relevante o suficiente para disputar atenção no momento.</p>
     {% endfor %}
 </div>
 {% endblock %}

@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% load sentinel %}
+{% load modelos %}
 
 {% block title %}SentinelOps — Model Performance{% endblock %}
 
@@ -7,171 +7,147 @@
 <div class="page-header">
     <h1>Model Performance</h1>
     <p class="page-header__subtitle">
-        Desempenho do modelo de previsão medido em <strong>walk-forward</strong> — várias origens
-        consecutivas, cada uma treinada só com o passado dela e avaliada em dias que nunca viu.
-        Uma janela única bastaria para um período atípico definir o número reportado.
+        Desempenho dos modelos de previsão de volume contra as baselines, no conjunto de teste e em walk-forward.
     </p>
 </div>
 
-{% if avaliacao %}
-<section class="secao">
-    <div class="tiles">
-        <div class="tile">
-            <span class="tile__label">MAE</span>
-            <span class="tile__valor">{{ avaliacao.mae }}</span>
-            <span class="tile__sub">erro absoluto médio, em incidentes/dia</span>
-        </div>
-        <div class="tile">
-            <span class="tile__label">RMSE</span>
-            <span class="tile__valor">{{ avaliacao.rmse }}</span>
-            <span class="tile__sub">penaliza erros grandes</span>
-        </div>
-        <div class="tile">
-            <span class="tile__label">MASE</span>
-            <span class="tile__valor {% if avaliacao.mase and avaliacao.mase < 1 %}sev-healthy{% else %}sev-warning{% endif %}">
-                {{ avaliacao.mase|default:"—" }}
-            </span>
-            <span class="tile__sub">abaixo de 1 = erra menos que a baseline</span>
-        </div>
-        <div class="tile">
-            <span class="tile__label">Baseline sazonal (MAE)</span>
-            <span class="tile__valor sev-neutral">{{ avaliacao.mae_naive|default:"—" }}</span>
-            <span class="tile__sub">repetir o mesmo dia da semana anterior</span>
-        </div>
-        <div class="tile">
-            <span class="tile__label">Ganho sobre a baseline</span>
-            <span class="tile__valor {% if ganho and ganho > 0 %}sev-healthy{% else %}sev-critical{% endif %}">
-                {% if ganho is not None %}{{ ganho }}%{% else %}—{% endif %}
-            </span>
-            <span class="tile__sub">
-                vence em {{ avaliacao.vitorias_naive }} de {{ avaliacao.janelas }} janelas
-            </span>
-        </div>
+{% if not cartoes %}
+<div class="insight insight--warning">
+    <div class="insight__campo">
+        <span class="insight__rotulo">Modelos ainda não treinados</span>
+        <span class="insight__texto">
+            Rode <span class="mono">python manage.py treinar_modelos</span> para gerar os
+            artefatos e as métricas. Nada é exibido aqui antes disso.
+        </span>
     </div>
-
-    <div class="tiles" style="margin-top:var(--space-3)">
-        <div class="tile">
-            <span class="tile__label">Viés</span>
-            <span class="tile__valor {% if avaliacao.vies < 0 %}sev-warning{% endif %}">{{ avaliacao.vies }}</span>
-            <span class="tile__sub">
-                erro médio com sinal — negativo = superestima o volume
-            </span>
-        </div>
-        <div class="tile">
-            <span class="tile__label">MAPE</span>
-            <span class="tile__valor">{% if avaliacao.mape %}{{ avaliacao.mape }}%{% else %}—{% endif %}</span>
-            <span class="tile__sub">infla quando o volume do dia é pequeno — prefira o MASE</span>
-        </div>
-        <div class="tile">
-            <span class="tile__label">Cobertura da faixa</span>
-            <span class="tile__valor {% if avaliacao.cobertura < avaliacao.cobertura_alvo %}sev-warning{% endif %}">
-                {% if avaliacao.cobertura is not None %}{{ avaliacao.cobertura }}%{% else %}—{% endif %}
-            </span>
-            <span class="tile__sub">
-                dos dias reais caíram dentro da faixa prevista (alvo {{ avaliacao.cobertura_alvo }}%)
-            </span>
-        </div>
-        <div class="tile">
-            <span class="tile__label">Dispersão do MAE</span>
-            <span class="tile__valor">{{ avaliacao.dispersao_mae }}</span>
-            <span class="tile__sub">quanto o erro varia de uma janela para outra</span>
-        </div>
-    </div>
-
-    {% if avaliacao.cobertura is not None and avaliacao.cobertura < avaliacao.cobertura_alvo %}
-    <div class="insight" style="margin-top:var(--space-3)">
-        <div class="insight__campo">
-            <span class="insight__rotulo">Como ler a faixa</span>
-            <span class="insight__texto">
-                A margem é calibrada para cobrir {{ avaliacao.cobertura_alvo }}% dos dias, mas
-                fora da amostra entrega {{ avaliacao.cobertura }}% — o erro do período recente é
-                maior que o do período em que ela foi calibrada. Alargar a faixa até fechar a
-                conta a tornaria larga demais para decidir escala. Trate-a como faixa provável,
-                não como limite garantido.
-            </span>
-        </div>
-    </div>
-    {% endif %}
-
-    {% if ganho is not None and ganho <= 0 %}
-    <div class="insight insight--warning" style="margin-top:var(--space-3)">
-        <div class="insight__campo">
-            <span class="insight__rotulo">Leitura honesta</span>
-            <span class="insight__texto">
-                Neste recorte o modelo <strong>não supera</strong> a baseline sazonal. Isso é informação
-                útil, não um defeito escondido: com a janela de dados disponível, repetir o mesmo dia da
-                semana anterior é competitivo. Trate a previsão como referência de planejamento, não
-                como garantia — e reavalie conforme mais histórico se acumular.
-            </span>
-        </div>
-    </div>
-    {% endif %}
-</section>
+</div>
+{% else %}
 
 <section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Modelo × baseline</h2></div>
     <div class="card">
-        <h2 class="card__title">Previsto vs. real nas janelas mais recentes</h2>
-        <p class="card__subtitle">
-            {{ avaliacao.janelas }} janelas de {{ avaliacao.horizonte }} dias ·
-            {{ avaliacao.dias_treino }} dias de treino por janela ·
-            {{ avaliacao.dias_teste }} dias avaliados no total ·
-            série <span class="mono">{{ avaliacao.campo }}</span>
-        </p>
-        <div class="table-wrapper" style="margin-top:var(--space-3)">
+        <div class="table-wrapper">
             <table class="table">
-                <thead><tr><th>Data</th><th>Real</th><th>Previsto</th><th>Erro</th><th></th></tr></thead>
-                <tbody>
-                    {% for p in avaliacao.pontos %}
+                <thead>
                     <tr>
-                        <td class="mono">{{ p.data|date:"d/m" }}</td>
-                        <td class="num">{{ p.real }}</td>
-                        <td class="num">{{ p.previsto }}</td>
-                        <td class="num {% if p.erro > 0 %}sev-warning{% elif p.erro < 0 %}sev-neutral{% endif %}">
-                            {{ p.erro|floatformat:1 }}
+                        <th>Modelo</th><th>Algoritmo</th><th>MAE (teste)</th>
+                        <th>MAE baseline</th><th>Ganho</th><th>RMSE</th><th>MASE</th><th>R²</th>
+                        <th>Viés</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cartao in cartoes %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'ml:detalhe' cartao.nome %}"><strong>{{ cartao.titulo }}</strong></a>
+                            <div class="mono" style="font-size:.72rem;opacity:.6">{{ cartao.alvo }}</div>
                         </td>
-                        <td style="width:45%">
-                            <div class="contrib__bar">
-                                <div class="contrib__fill" style="width:{% widthratio p.real maximo 100 %}%;background:var(--sev-neutral)"></div>
-                            </div>
-                            <div class="contrib__bar" style="margin-top:3px">
-                                <div class="contrib__fill" style="width:{% widthratio p.previsto maximo 100 %}%;background:var(--color-primary)"></div>
-                            </div>
+                        <td><span class="chip chip--neutral">{{ cartao.algoritmo }}</span></td>
+                        <td class="num"><strong>{{ cartao.metricas.teste.mae }}</strong></td>
+                        <td class="num">{{ cartao.baseline.mae_teste }}</td>
+                        <td class="num {% if cartao.ganho_vs_baseline > 0 %}sev-healthy{% else %}sev-critical{% endif %}">
+                            {{ cartao.ganho_vs_baseline|sinal }}{{ cartao.ganho_vs_baseline }}%
                         </td>
+                        <td class="num">{{ cartao.metricas.teste.rmse }}</td>
+                        <td class="num {% if cartao.metricas.teste.mase < 1 %}sev-healthy{% else %}sev-warning{% endif %}">
+                            {{ cartao.metricas.teste.mase }}
+                        </td>
+                        <td class="num">{{ cartao.metricas.teste.r2 }}</td>
+                        <td class="num">{{ cartao.metricas.teste.vies }}</td>
                     </tr>
                     {% endfor %}
                 </tbody>
             </table>
         </div>
-        <div class="linha-meta" style="margin-top:var(--space-2)">
-            <span><span class="chip chip--neutral">real</span></span>
-            <span style="color:var(--color-primary)">▬ previsto</span>
-        </div>
+        <p class="card__subtitle" style="margin-top:var(--space-3)">
+            A baseline é a sazonal ingênua: repetir o volume do mesmo dia da semana anterior. É a
+            referência clássica em série temporal e o denominador do MASE — abaixo de 1, o modelo
+            erra menos que ela.
+        </p>
     </div>
 </section>
 
+{% for cartao in cartoes %}
 <section class="secao">
-    <div class="secao__cabecalho"><h2 class="secao__titulo">Erro por janela</h2></div>
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">{{ cartao.titulo }} — {{ cartao.algoritmo }}</h2>
+        <span class="secao__meta"><a href="{% url 'ml:detalhe' cartao.nome %}">cartão completo</a></span>
+    </div>
+
+    {% if cartao.metricas.walk_forward %}
     <div class="card">
-        <p class="card__subtitle">
-            Cada linha é uma origem de previsão independente. O modelo é útil quando ganha da
-            baseline na maioria delas — não quando ganha na média de uma janela só.
-        </p>
+        <h3 class="card__title">Walk-forward · {{ cartao.metricas.walk_forward.janelas }} origens</h3>
+        <div class="tiles" style="margin-top:var(--space-3)">
+            <div class="tile">
+                <span class="tile__label">MAE médio</span>
+                <span class="tile__valor">{{ cartao.metricas.walk_forward.mae }}</span>
+                <span class="tile__sub">± {{ cartao.metricas.walk_forward.dispersao_mae }} entre janelas</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">MAE da baseline</span>
+                <span class="tile__valor sev-neutral">{{ cartao.metricas.walk_forward.mae_baseline }}</span>
+                <span class="tile__sub">mesma janela, mesma métrica</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">MASE</span>
+                <span class="tile__valor {% if cartao.metricas.walk_forward.mase < 1 %}sev-healthy{% else %}sev-warning{% endif %}">
+                    {{ cartao.metricas.walk_forward.mase }}
+                </span>
+                <span class="tile__sub">abaixo de 1 = modelo vence</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">Vitórias</span>
+                <span class="tile__valor">
+                    {{ cartao.metricas.walk_forward.vitorias_sobre_baseline }}/{{ cartao.metricas.walk_forward.janelas }}
+                </span>
+                <span class="tile__sub">janelas em que errou menos que a baseline</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">Cobertura da faixa</span>
+                <span class="tile__valor {% if cartao.faixa.cobertura_teste < cartao.faixa.cobertura_alvo %}sev-warning{% endif %}">
+                    {{ cartao.faixa.cobertura_teste|floatformat:2 }}
+                </span>
+                <span class="tile__sub">alvo {{ cartao.faixa.cobertura_alvo }} no teste</span>
+            </div>
+        </div>
+
+        {% if cartao.perde_da_baseline %}
+        <div class="insight insight--warning" style="margin-top:var(--space-3)">
+            <div class="insight__campo">
+                <span class="insight__rotulo">Leitura honesta deste recorte</span>
+                <span class="insight__texto">
+                    No conjunto de teste este modelo fica atrás da baseline sazonal em pelo menos
+                    uma leitura — MASE agregado {{ cartao.metricas.teste.mase }}, e
+                    {{ cartao.global.ganho_vs_baseline|floatformat:1 }}% de ganho na série global —
+                    ainda que vença no walk-forward (MASE {{ cartao.metricas.walk_forward.mase }},
+                    {{ cartao.metricas.walk_forward.vitorias_sobre_baseline }} de
+                    {{ cartao.metricas.walk_forward.janelas }} janelas). O teste cai sobre a virada
+                    de ano — a única do histórico disponível, já que a série em regime operacional
+                    começa em {{ execucao.inicio_regime }}. O modelo nunca viu um dezembro, então
+                    não tem como saber que o volume despenca entre o Natal e o Ano-Novo; o viés de
+                    {{ cartao.metricas.teste.vies }} mostra exatamente isso (superestimou). É uma
+                    limitação de dados, não um defeito escondido: com mais um ciclo anual de
+                    histórico, é o tipo de padrão que o modelo passa a capturar.
+                </span>
+            </div>
+        </div>
+        {% endif %}
+
         <div class="table-wrapper" style="margin-top:var(--space-3)">
             <table class="table">
-                <thead><tr><th>Janela</th><th>MAE do modelo</th><th>MAE da baseline</th><th></th></tr></thead>
+                <thead><tr><th>Origem</th><th>MAE do modelo</th><th>MAE da baseline</th><th>Linhas</th><th></th></tr></thead>
                 <tbody>
-                    {% for j in avaliacao.resumo_janelas %}
+                    {% for janela in cartao.metricas.walk_forward.por_origem %}
                     <tr>
-                        <td class="mono">{{ j.inicio|date:"d/m" }} – {{ j.fim|date:"d/m" }}</td>
-                        <td class="num">{{ j.mae }}</td>
-                        <td class="num">{{ j.mae_naive|default:"—" }}</td>
+                        <td class="mono">{{ janela.origem }}</td>
+                        <td class="num">{{ janela.mae }}</td>
+                        <td class="num">{{ janela.mae_baseline }}</td>
+                        <td class="num" style="opacity:.6">{{ janela.n }}</td>
                         <td>
-                            {% if j.mae_naive %}
-                                {% if j.mae < j.mae_naive %}
-                                <span class="chip chip--healthy">modelo vence</span>
-                                {% else %}
-                                <span class="chip chip--warning">baseline vence</span>
-                                {% endif %}
+                            {% if janela.mae < janela.mae_baseline %}
+                            <span class="chip chip--healthy">modelo vence</span>
+                            {% else %}
+                            <span class="chip chip--warning">baseline vence</span>
                             {% endif %}
                         </td>
                     </tr>
@@ -180,8 +156,75 @@
             </table>
         </div>
     </div>
+    {% endif %}
+
+    {% if cartao.metricas.teste_por_dimensao %}
+    <div class="card" style="margin-top:var(--space-3)">
+        <h3 class="card__title">Erro por tipo de entidade</h3>
+        <p class="card__subtitle">
+            O MAE agregado do painel mistura escalas: errar 2 incidentes é muito num produto de
+            3/dia e irrelevante no volume global. Por isso o número aparece separado.
+        </p>
+        <div class="table-wrapper" style="margin-top:var(--space-3)">
+            <table class="table">
+                <thead><tr><th>Entidade</th><th>MAE</th><th>MAE baseline</th><th>Ganho</th><th>MAPE</th><th>R²</th></tr></thead>
+                <tbody>
+                    {% for dimensao, m in cartao.metricas.teste_por_dimensao.items %}
+                    <tr>
+                        <td><strong>{{ dimensao }}</strong></td>
+                        <td class="num">{{ m.mae }}</td>
+                        <td class="num">{{ m.mae_baseline }}</td>
+                        <td class="num {% if m.ganho_vs_baseline > 0 %}sev-healthy{% else %}sev-critical{% endif %}">
+                            {{ m.ganho_vs_baseline|floatformat:1 }}%
+                        </td>
+                        <td class="num">{{ m.mape|floatformat:1 }}%</td>
+                        <td class="num">{{ m.r2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
+
+    {% if cartao.metricas.teste_por_horizonte %}
+    <div class="card" style="margin-top:var(--space-3)">
+        <h3 class="card__title">Erro por horizonte</h3>
+        <p class="card__subtitle">Quanto mais longe o dia previsto, menos o último dado observado ajuda.</p>
+        <div class="table-wrapper" style="margin-top:var(--space-3)">
+            <table class="table">
+                <thead><tr><th>Horizonte</th><th>MAE</th><th>MAE baseline</th><th>RMSE</th><th>R²</th></tr></thead>
+                <tbody>
+                    {% for horizonte, m in cartao.metricas.teste_por_horizonte.items %}
+                    <tr>
+                        <td class="mono">D+{{ horizonte }}</td>
+                        <td class="num">{{ m.mae }}</td>
+                        <td class="num">{{ m.mae_baseline }}</td>
+                        <td class="num">{{ m.rmse }}</td>
+                        <td class="num">{{ m.r2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {% endif %}
 </section>
-{% else %}
-<p class="vazio">Histórico insuficiente para executar o backtest.</p>
+{% endfor %}
+
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Como ler as métricas</h2></div>
+    <div class="card">
+        <div class="table-wrapper">
+            <table class="table">
+                <tbody>
+                    {% for chave, texto in glossario.items %}
+                    <tr><td class="mono" style="width:8rem">{{ chave }}</td><td>{{ texto }}</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
 {% endif %}
 {% endblock %}

@@ -9,6 +9,14 @@
         <a class="sidebar__link" href="{% url 'core:home' %}">
             <span class="sidebar__icon">◎</span> Command Center
         </a>
+        <span class="sidebar__link sidebar__link--futuro" aria-disabled="true">
+            <span class="sidebar__icon">◐</span> Analista Operacional
+            <span class="sidebar__futuro">Por vir</span>
+        </span>
+        <span class="sidebar__link sidebar__link--futuro" aria-disabled="true">
+            <span class="sidebar__icon">✧</span> Sentinel Copilot
+            <span class="sidebar__futuro">Por vir</span>
+        </span>
 
         <span class="sidebar__grupo">Monitor</span>
         <a class="sidebar__link" href="{% url 'monitor:live' %}">
@@ -37,6 +45,12 @@
         <a class="sidebar__link" href="{% url 'intelligence:insights' %}">
             <span class="sidebar__icon">✦</span> Operational Insights
         </a>
+        <a class="sidebar__link" href="{% url 'ml:modelos' %}">
+            <span class="sidebar__icon">⬡</span> Modelos de ML
+        </a>
+        <a class="sidebar__link" href="{% url 'ml:previsoes' %}">
+            <span class="sidebar__icon">◴</span> Histórico de previsões
+        </a>
 
         <span class="sidebar__grupo">Action</span>
         <a class="sidebar__link" href="{% url 'alerts:decisao' %}">
@@ -44,11 +58,6 @@
         </a>
         <a class="sidebar__link" href="{% url 'alerts:index' %}">
             <span class="sidebar__icon">◭</span> Alert Center
-        </a>
-
-        <span class="sidebar__grupo">AI</span>
-        <a class="sidebar__link" href="{% url 'copilot:index' %}">
-            <span class="sidebar__icon">✧</span> Sentinel Copilot
         </a>
 
         <span class="sidebar__grupo">Reports</span>

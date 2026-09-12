@@ -91,6 +91,53 @@
     </div>
 </section>
 
+{% if treino %}
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">Que recorte da base virou treino</h2>
+        <span class="secao__meta"><a href="{% url 'ml:modelos' %}">ver os modelos →</a></span>
+    </div>
+    <div class="card">
+        <p class="card__subtitle">
+            O extrato cobre três anos, mas até o fim de 2024 registra menos de um incidente
+            elegível por dia — é carga histórica parcial, não operação. Treinar sobre esse trecho
+            ensinaria ao modelo um patamar que não existe mais. O corte não foi escolhido a dedo:
+            é o primeiro dia a partir do qual a mediana móvel de 28 dias não volta a cair abaixo
+            de 25% da mediana do período final.
+        </p>
+        <div class="tiles" style="margin-top:var(--space-3)">
+            <div class="tile">
+                <span class="tile__label">Janela de treino</span>
+                <span class="tile__valor" style="font-size:1.05rem">
+                    {{ treino.inicio_regime }} → {{ treino.fim_dados }}
+                </span>
+                <span class="tile__sub">regime operacional detectado nos dados</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">Incidentes usados</span>
+                <span class="tile__valor">{{ treino.incidentes }}</span>
+                <span class="tile__sub">de {{ cobertura.total }} no extrato</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">Entidades do painel</span>
+                <span class="tile__valor">{{ treino.entidades }}</span>
+                <span class="tile__sub">global, produtos, equipes, categorias, prioridades e ativos</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">Linhas de treino</span>
+                <span class="tile__valor">{{ treino.linhas_matriz }}</span>
+                <span class="tile__sub">entidade × dia × horizonte</span>
+            </div>
+            <div class="tile">
+                <span class="tile__label">Último treino</span>
+                <span class="tile__valor" style="font-size:1.05rem">{{ treino.executado_em|slice:":10" }}</span>
+                <span class="tile__sub">{{ treino.modelos|length }} modelos gravados</span>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
 <section class="secao">
     <div class="card">
         <h2 class="card__title">Como recarregar</h2>
@@ -98,6 +145,12 @@
         <p class="card__subtitle" style="margin-top:var(--space-2)">
             Recria a base a partir do xlsx e materializa as métricas diárias. Use
             <span class="mono">--manter-simulacoes</span> para preservar incidentes injetados manualmente.
+        </p>
+        <div class="explain__formula" style="margin-top:var(--space-3)">python manage.py treinar_modelos</div>
+        <p class="card__subtitle" style="margin-top:var(--space-2)">
+            Depois de recarregar, retreine: os modelos ficam calibrados para o período em que
+            foram treinados, e dado novo com modelo velho continua produzindo previsão — só que
+            para uma operação que não é mais aquela.
         </p>
     </div>
 </section>

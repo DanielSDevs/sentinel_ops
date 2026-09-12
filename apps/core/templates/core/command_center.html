@@ -71,7 +71,7 @@
         </div>
 
         <div class="card">
-            <h2 class="card__title">AI Operational Briefing</h2>
+            <h2 class="card__title">Briefing operacional</h2>
             <p class="card__subtitle">{{ briefing.resumo }}</p>
 
             <div class="briefing" style="margin-top:var(--space-3)">
@@ -171,7 +171,7 @@
                     </div>
                 </div>
                 {% empty %}
-                <p class="vazio">Nenhum produto acima do limiar de risco.</p>
+                <p class="vazio">Nenhum produto em risco relevante no momento.</p>
                 {% endfor %}
             </div>
         </div>
@@ -193,10 +193,31 @@
                     <span class="tile__valor">{{ previsao.d7_total }}</span>
                     <span class="tile__sub">faixa {{ previsao.d7_min }}–{{ previsao.d7_max }}</span>
                 </div>
+                {% if risco_ola %}
+                <div class="tile">
+                    <span class="tile__label">Risco de perda de OLA</span>
+                    <span class="tile__valor sev-{% if risco_ola.faixa == 'alto' %}critical{% elif risco_ola.faixa == 'medio' %}warning{% else %}healthy{% endif %}">
+                        {{ risco_ola.risco }}%
+                    </span>
+                    <span class="tile__sub">{{ risco_ola.violacoes_esperadas }} violações esperadas em D+1</span>
+                </div>
+                {% endif %}
+                <div class="tile">
+                    <span class="tile__label">Picos previstos (7 dias)</span>
+                    <span class="tile__valor {% if picos_previstos %}sev-warning{% endif %}">{{ picos_previstos|length }}</span>
+                    <span class="tile__sub">combinações de grupo/produto e dia com pressão acima do normal</span>
+                </div>
             </div>
             <p class="briefing__texto" style="margin-top:var(--space-3)">{{ interpretacao_previsao }}</p>
+            <div class="linha-meta" style="margin-top:var(--space-2)">
+                <span>previsão produzida por modelo treinado sobre o histórico da operação</span>
+                <a href="{% url 'ml:modelos' %}">ver detalhes técnicos →</a>
+            </div>
             {% else %}
-            <p class="vazio">Histórico insuficiente para gerar previsão.</p>
+            <p class="vazio">
+                Modelo de previsão ainda não treinado — rode
+                <span class="mono">python manage.py treinar_modelos</span>.
+            </p>
             {% endif %}
         </div>
     </div>

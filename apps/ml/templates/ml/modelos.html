@@ -1,0 +1,233 @@
+{% extends 'base.html' %}
+{% load modelos %}
+
+{% block title %}SentinelOps — Modelos de Machine Learning{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Modelos de Machine Learning</h1>
+    <p class="page-header__subtitle">
+        Os modelos treinados, o algoritmo vencedor de cada um e a métrica medida no conjunto de teste.
+    </p>
+</div>
+
+{% if not tabela %}
+<div class="insight insight--warning">
+    <div class="insight__campo">
+        <span class="insight__rotulo">Modelos ainda não treinados</span>
+        <span class="insight__texto">
+            Nenhum artefato encontrado em <span class="mono">ml/models/</span>. Rode
+            <span class="mono">python manage.py treinar_modelos</span> para treinar sobre a base
+            importada. Enquanto isso, a plataforma não exibe previsão nenhuma — preferimos campo
+            vazio a número inventado.
+        </span>
+    </div>
+</div>
+{% else %}
+
+{% if execucao %}
+<section class="secao">
+    <div class="tiles">
+        <div class="tile">
+            <span class="tile__label">Modelos treinados</span>
+            <span class="tile__valor">{{ execucao.modelos|length }}</span>
+            <span class="tile__sub">artefatos em ml/models/</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Janela de treino</span>
+            <span class="tile__valor" style="font-size:1.1rem">
+                {{ execucao.inicio_regime }} → {{ execucao.fim_dados }}
+            </span>
+            <span class="tile__sub">regime operacional detectado nos dados</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Incidentes usados</span>
+            <span class="tile__valor">{{ execucao.incidentes }}</span>
+            <span class="tile__sub">{{ execucao.entidades }} entidades no painel</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Linhas de treino</span>
+            <span class="tile__valor">{{ execucao.linhas_matriz }}</span>
+            <span class="tile__sub">entidade × dia × horizonte</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Último treino</span>
+            <span class="tile__valor" style="font-size:1.1rem">{{ execucao.executado_em|slice:":10" }}</span>
+            <span class="tile__sub">{{ execucao.segundos }}s de pipeline</span>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Modelo → objetivo → algoritmo → métrica</h2></div>
+    <div class="card">
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Modelo</th><th>Objetivo</th><th>Algoritmo</th><th>Métrica</th>
+                        <th>Resultado</th><th>Ganho vs. baseline</th><th>Notebook</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for linha in tabela %}
+                    <tr>
+                        <td>
+                            <a href="{% url 'ml:detalhe' linha.nome %}"><strong>{{ linha.titulo }}</strong></a>
+                            <div class="mono" style="font-size:.75rem;opacity:.6">{{ linha.nome }}</div>
+                        </td>
+                        <td style="max-width:24rem">{{ linha.objetivo }}</td>
+                        <td><span class="chip chip--neutral">{{ linha.algoritmo }}</span></td>
+                        <td class="mono">{{ linha.metrica }}</td>
+                        <td class="num">
+                            {% if linha.valor is not None %}
+                                <strong>{{ linha.valor }}</strong>
+                                <div style="font-size:.72rem;opacity:.6">{{ linha.particao }}</div>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td class="num">
+                            {% if linha.ganho is not None %}
+                                <span class="{% if linha.ganho > 0 %}sev-healthy{% else %}sev-critical{% endif %}">
+                                    {{ linha.ganho|sinal }}{{ linha.ganho }}%
+                                </span>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td>
+                            {% if linha.notebook %}
+                                <span class="mono" style="font-size:.74rem">{{ linha.notebook.nome }}</span>
+                                {% if not linha.notebook.existe %}
+                                    <span class="chip chip--warning">ausente</span>
+                                {% endif %}
+                            {% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <p class="card__subtitle" style="margin-top:var(--space-3)">
+            O resultado exibido é sempre o da partição de <strong>teste</strong>, nunca tocada
+            durante a escolha do modelo. Onde aparece "validação", o modelo é não supervisionado
+            e não existe teste rotulado — está dito no cartão de cada um.
+        </p>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Cartão de cada modelo</h2></div>
+    <div class="pilha">
+        {% for cartao in cartoes %}
+        <div class="card">
+            <div class="risco__topo">
+                <div>
+                    <h3 class="card__title">
+                        <a href="{% url 'ml:detalhe' cartao.nome %}">{{ cartao.titulo }}</a>
+                    </h3>
+                    <p class="card__subtitle">{{ cartao.objetivo }}</p>
+                </div>
+                <div class="risco__score">
+                    {% if cartao.metrica_valor is not None %}{{ cartao.metrica_valor }}{% else %}—{% endif %}
+                    <span style="display:block;font-size:.7rem;opacity:.7">{{ cartao.metrica_rotulo }}</span>
+                </div>
+            </div>
+
+            <div class="linha-meta" style="margin-top:var(--space-2)">
+                <span class="chip chip--neutral">{{ cartao.tipo_legivel }}</span>
+                <span class="chip chip--neutral">{{ cartao.algoritmo }}</span>
+                <span>{{ cartao.n_features }} features</span>
+                {% if cartao.linhas_treino %}<span>{{ cartao.linhas_treino }} linhas de treino</span>{% endif %}
+                {% if cartao.artefato_existe %}
+                    <span class="chip chip--healthy">artefato disponível</span>
+                {% else %}
+                    <span class="chip chip--critical">artefato ausente</span>
+                {% endif %}
+            </div>
+
+            {% if cartao.observacoes %}
+            <div class="insight" style="margin-top:var(--space-3)">
+                {% for observacao in cartao.observacoes %}
+                <div class="insight__campo">
+                    <span class="insight__texto">{{ observacao }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+
+            {% with topo=cartao.importancia_permutacao|default:cartao.importancias %}
+            {% if topo %}
+            <div style="margin-top:var(--space-3)">
+                <span class="insight__rotulo">O que mais pesa na decisão do modelo</span>
+                <div class="linha-meta" style="margin-top:var(--space-2);flex-wrap:wrap">
+                    {% for item in topo|slice:":4" %}
+                    <span class="chip chip--neutral">{{ item.descricao }}</span>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+            {% endwith %}
+        </div>
+        {% endfor %}
+    </div>
+</section>
+
+{% if clusters %}
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">Clusterização de produtos</h2>
+        <span class="secao__meta">
+            k = {{ clusters.k }} escolhido por silhueta ({{ clusters.silhueta }})
+        </span>
+    </div>
+    <div class="card">
+        <p class="card__subtitle">
+            Produtos agrupados por comportamento operacional — volume típico, participação de
+            críticos, taxa de violação, MTTR, regularidade e ruído de monitoramento. O número de
+            grupos não foi escolhido no olho: é o que maximizou a silhueta.
+        </p>
+        <div class="table-wrapper" style="margin-top:var(--space-3)">
+            <table class="table">
+                <thead><tr><th>Grupo</th><th>Produtos</th><th>Perfil médio</th></tr></thead>
+                <tbody>
+                    {% for numero, grupo in clusters.grupos.items %}
+                    <tr>
+                        <td class="mono">#{{ numero }}</td>
+                        <td>
+                            {% for produto in grupo.produtos %}
+                            <span class="chip chip--neutral">{{ produto }}</span>
+                            {% endfor %}
+                        </td>
+                        <td style="font-size:.78rem">
+                            volume {{ grupo.perfil.volume_medio|floatformat:1 }}/dia ·
+                            críticos {{ grupo.perfil.share_criticos|floatformat:2 }} ·
+                            violação {{ grupo.perfil.taxa_violacao|floatformat:3 }} ·
+                            MTTR {{ grupo.perfil.mttr|floatformat:0 }} min
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Como ler as métricas</h2></div>
+    <div class="card">
+        <div class="table-wrapper">
+            <table class="table">
+                <tbody>
+                    {% for chave, texto in glossario.items %}
+                    <tr>
+                        <td class="mono" style="width:8rem">{{ chave }}</td>
+                        <td>{{ texto }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

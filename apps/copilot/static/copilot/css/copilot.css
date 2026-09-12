@@ -1,98 +1,55 @@
-/* Agent Copilot */
+/* Sentinel Copilot — caixa de consulta.
 
-.copilot-chat {
-    max-width: 720px;
-    margin: 0 auto;
-    display: flex;
-    flex-direction: column;
-    height: 60vh;
-    min-height: 420px;
-}
+   A folha anterior desenhava balões de conversa, bolinhas de "digitando" e mensagem do usuário
+   com brilho: estética de chatbot, que é exatamente o que esta plataforma não é. Nada daquilo
+   chegava a ser usado (o template nunca aplicou as classes .copilot-message), e o que existe de
+   fato é um formulário GET que devolve a resposta montada no servidor. É isso que se estiliza
+   aqui: um campo de consulta de sistema, não uma janela de conversa. */
 
-.copilot-chat__messages {
-    flex: 1;
-    overflow-y: auto;
+.copilot-consulta {
     display: flex;
-    flex-direction: column;
     gap: var(--space-2);
-    padding-bottom: var(--space-3);
-}
-
-.copilot-message {
-    max-width: 80%;
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-lg);
-    font-size: 0.95rem;
-    animation: fade-in-up 0.3s ease both;
-}
-
-.copilot-message--bot {
-    background: var(--glass-strong-bg);
-    backdrop-filter: blur(var(--blur-strong));
-    -webkit-backdrop-filter: blur(var(--blur-strong));
-    border: 1px solid var(--glass-strong-border);
-    align-self: flex-start;
-}
-
-.copilot-message--user {
-    background-color: var(--color-primary);
-    box-shadow: 0 0 20px rgba(var(--color-primary-rgb), 0.3);
-    color: #fff;
-    align-self: flex-end;
-}
-
-.copilot-typing {
-    align-self: flex-start;
-    display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: 4px;
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-lg);
-    background: var(--glass-strong-bg);
-    backdrop-filter: blur(var(--blur-strong));
-    -webkit-backdrop-filter: blur(var(--blur-strong));
-    border: 1px solid var(--glass-strong-border);
 }
 
-.copilot-typing__dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--color-text-muted);
-    animation: typing-bounce 1.2s ease-in-out infinite;
-}
-
-.copilot-typing__dot:nth-child(2) { animation-delay: 0.15s; }
-.copilot-typing__dot:nth-child(3) { animation-delay: 0.3s; }
-
-@keyframes typing-bounce {
-    0%, 60%, 100% { transform: translateY(0); opacity: 0.5; }
-    30% { transform: translateY(-4px); opacity: 1; }
-}
-
-.copilot-chat__form {
-    display: flex;
-    gap: var(--space-2);
-    border-top: 1px solid var(--glass-border);
-    padding-top: var(--space-3);
-}
-
-.copilot-chat__form input {
+.copilot-consulta input[type="search"] {
     flex: 1;
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--blur));
-    -webkit-backdrop-filter: blur(var(--blur));
-    border: 1px solid var(--glass-border);
+    min-width: 15rem;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-strong);
     border-radius: var(--radius);
     color: var(--color-text);
-    padding: 0.7rem 0.9rem;
+    padding: 0.55rem 0.8rem;
     font-family: inherit;
-    font-size: 0.95rem;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    font-size: 0.9rem;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 
-.copilot-chat__form input:focus {
+.copilot-consulta input[type="search"]:focus {
     outline: none;
     border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.15);
+    box-shadow: 0 0 0 3px rgba(var(--color-primary-rgb), 0.12);
+}
+
+/* Sugestões de pergunta: atalhos, não "prompts". */
+.copilot-sugestoes {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-3);
+}
+
+.copilot-sugestao {
+    font-size: 0.78rem;
+    padding: 0.25rem 0.6rem;
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-2);
+    color: var(--color-text-muted);
+}
+
+.copilot-sugestao:hover {
+    border-color: var(--color-border-strong);
+    color: var(--color-text);
 }

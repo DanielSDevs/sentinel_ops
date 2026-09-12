@@ -1,67 +1,106 @@
-/* Paleta e tokens de design do SentinelOps — Dark Mode Premium */
+/* Tokens de design do SentinelOps — Centro de Inteligência e Monitoramento Operacional.
+
+   Tema escuro de console de operação: a tela fica horas aberta num NOC, e fundo escuro com
+   texto claro cansa menos nesse uso. Escuro aqui não é "dark premium" — continuam valendo
+   todas as decisões do redesign: nenhum gradiente, nenhum vidro, nenhum brilho, nenhuma
+   animação decorativa, cantos pouco arredondados e densidade alta. O único destaque visual
+   da tela é o estado da operação (severidade), nunca a interface em si.
+
+   O cinza de base é levemente frio e dessaturado, não preto puro: preto absoluto com texto
+   branco produz halo nas bordas e piora a leitura de tabela densa, que é o que esta
+   plataforma mais tem.
+
+   O vermelho da Locaweb aparece como acento — marca, item ativo da navegação, ação primária
+   e linha de previsão. Ele não pinta fundo de bloco nem se repete a ponto de virar ruído. */
 :root {
-    /* Cores base (centro de comando — preto azulado profundo) */
-    --color-bg: hsl(220 15% 6%);
-    --color-surface: hsl(220 15% 9%);
-    --color-surface-2: hsl(220 15% 13%);
-    --color-border: hsl(220 12% 16%);
+    /* Diz ao navegador para pintar scrollbar, caixa de seleção e campo nativo em escuro.
+       Sem isto, o autofill e o <select> voltam brancos no meio de uma tela escura. */
+    color-scheme: dark;
 
-    --color-text: hsl(0 0% 95%);
-    --color-text-muted: hsl(220 10% 55%);
+    /* ---------- Superfícies ---------- */
+    --color-bg: #0f1216;            /* o fundo da sala */
+    --color-surface: #191d24;       /* painéis */
+    --color-surface-2: #1f242c;     /* blocos aninhados dentro de um painel */
+    --color-surface-3: #272d36;     /* trilhos, cabeçalho de tabela, barras vazias */
+    --color-border: #2c333d;
+    --color-border-strong: #3b434f;
 
-    /* Marca */
-    --color-primary: hsl(0 85% 55%);
-    --color-primary-hover: hsl(0 85% 48%);
-    --color-primary-rgb: 239, 55, 60;
+    --color-text: #e8ebef;
+    --color-text-muted: #97a1ae;
 
-    /* Estados operacionais (semânticas) */
-    --color-success: #22c55e;
-    --color-warning: #eab308;
-    --color-danger: #ef4444;
-    --color-info: #3b82f6;
-    --color-orange: #f97316;
+    /* ---------- Marca (Locaweb) ---------- */
+    /* Em fundo escuro o vermelho da marca precisa clarear para o texto passar em contraste;
+       --color-accent guarda o tom puro, usado só em preenchimento sólido. */
+    --color-primary: #f4585d;
+    --color-primary-hover: #f87b7f;
+    --color-primary-rgb: 244, 88, 93;
+    --color-accent: #ef373c;
+    /* Preenchimento sólido que carrega texto branco por cima (botão primário). O tom claro
+       de --color-primary serve para texto e borda sobre o fundo escuro, mas como fundo de
+       botão deixaria o rótulo branco em contraste baixo demais. */
+    --color-primary-solid: #cf3036;
+    --color-primary-solid-hover: #b82a2f;
+
+    /* ---------- Estados operacionais ---------- */
+    --color-success: #34d399;
+    --color-warning: #fbbf24;
+    --color-danger: #f87171;
+    --color-info: #7aa2f7;
+    --color-orange: #fb923c;
 
     /* Escala de severidade — quatro estados.
-       Deliberadamente não é um gradiente vermelho→verde: o "saudável" é um ciano frio (lê como
+       Continua não sendo um gradiente vermelho→verde: "saudável" é um teal frio (lê como
        "nominal", não como "comemoração") e a progressão passa por âmbar e laranja antes do
-       vermelho, o que preserva a leitura para daltonismo e evita o visual de semáforo. */
+       vermelho, o que preserva a leitura para daltonismo e evita o visual de semáforo.
+       Os tons -dim são preenchimento de chip: alpha baixo sobre o fundo escuro, para o texto
+       da mesma família continuar legível por cima sem virar bloco colorido. */
     --sev-healthy: #2dd4bf;
-    --sev-healthy-dim: rgba(45, 212, 191, 0.14);
+    --sev-healthy-dim: rgba(45, 212, 191, 0.16);
     --sev-attention: #fbbf24;
-    --sev-attention-dim: rgba(251, 191, 36, 0.14);
+    --sev-attention-dim: rgba(251, 191, 36, 0.16);
     --sev-warning: #fb923c;
-    --sev-warning-dim: rgba(251, 146, 60, 0.14);
+    --sev-warning-dim: rgba(251, 146, 60, 0.16);
     --sev-critical: #f87171;
-    --sev-critical-dim: rgba(248, 113, 113, 0.16);
-    --sev-neutral: #64748b;
-    --sev-neutral-dim: rgba(100, 116, 139, 0.14);
+    --sev-critical-dim: rgba(248, 113, 113, 0.18);
+    --sev-neutral: #8b95a3;
+    --sev-neutral-dim: rgba(139, 149, 163, 0.16);
 
-    /* Vidro (glassmorphism) */
-    --glass-bg: rgba(255, 255, 255, 0.03);
-    --glass-border: rgba(255, 255, 255, 0.06);
-    --glass-strong-bg: rgba(255, 255, 255, 0.06);
-    --glass-strong-border: rgba(255, 255, 255, 0.08);
-    --blur: 20px;
-    --blur-strong: 30px;
+    /* Tinta de informação, usada por badge e chip de ícone. Existe como token porque estava
+       fixa no CSS e virava um retângulo azul-claro no meio da tela escura. */
+    --tint-info: rgba(122, 162, 247, 0.16);
 
-    /* Tipografia */
+    /* ---------- Compatibilidade ----------
+       O CSS antigo referenciava tokens de vidro em ~40 lugares. Em vez de caçar cada um,
+       eles apontam para superfícies chapadas. Não há blur: --blur fica em 0 para que
+       qualquer backdrop-filter remanescente seja inócuo. */
+    --glass-bg: var(--color-surface);
+    --glass-border: var(--color-border);
+    --glass-strong-bg: var(--color-surface);
+    --glass-strong-border: var(--color-border-strong);
+    --blur: 0px;
+    --blur-strong: 0px;
+
+    /* ---------- Tipografia ---------- */
     --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', 'Fira Code', Consolas, monospace;
 
-    /* Espaçamento e forma */
+    /* ---------- Espaçamento e forma ---------- */
+    /* Escala apertada: a tela é de trabalho diário, densidade é feature. */
     --space-1: 0.25rem;
     --space-2: 0.5rem;
-    --space-3: 1rem;
-    --space-4: 1.5rem;
-    --space-5: 2.5rem;
+    --space-3: 0.875rem;
+    --space-4: 1.25rem;
+    --space-5: 1.75rem;
 
-    --radius-sm: 0.5rem;
-    --radius: 0.875rem;
-    --radius-lg: 1.25rem;
-    --radius-xl: 1.5rem;
+    --radius-sm: 3px;
+    --radius: 4px;
+    --radius-lg: 6px;
+    --radius-xl: 8px;
 
-    --shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
-    --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.45);
+    /* Em fundo escuro a sombra quase não aparece — quem separa painel do fundo é a borda de
+       1px. A sombra fica só para o que realmente flutua (sidebar aberta no mobile). */
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.45);
 
-    --container-width: 1400px;
+    --container-width: 1560px;
 }

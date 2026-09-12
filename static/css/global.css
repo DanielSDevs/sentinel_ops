@@ -1,4 +1,6 @@
-/* Estilos globais do SentinelOps — Dark Mode Premium */
+/* Estilos globais do SentinelOps — central de operações.
+   Sem gradiente de fundo, sem vidro, sem brilho e sem animação decorativa: a única coisa que
+   chama atenção na tela é o estado da operação. */
 
 * {
     margin: 0;
@@ -14,22 +16,10 @@ body {
     font-family: var(--font-sans);
     background-color: var(--color-bg);
     color: var(--color-text);
-    line-height: 1.6;
+    line-height: 1.55;
     min-height: 100vh;
     position: relative;
-}
-
-/* ---------- Atmosfera (glow radial de fundo) ---------- */
-
-.atmosphere {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    pointer-events: none;
-    background:
-        radial-gradient(circle at 12% 18%, rgba(var(--color-primary-rgb), 0.10), transparent 42%),
-        radial-gradient(circle at 88% 12%, rgba(59, 130, 246, 0.07), transparent 40%),
-        radial-gradient(circle at 50% 100%, rgba(34, 197, 94, 0.05), transparent 45%);
+    -webkit-font-smoothing: antialiased;
 }
 
 .app-shell, .topbar {
@@ -39,7 +29,7 @@ body {
 
 main {
     flex: 1;
-    padding: var(--space-5) var(--space-4);
+    padding: var(--space-4);
     width: 100%;
 }
 
@@ -49,10 +39,10 @@ main {
 }
 
 h1, h2, h3 {
-    line-height: 1.25;
+    line-height: 1.3;
     margin-bottom: var(--space-3);
-    font-weight: 700;
-    letter-spacing: -0.01em;
+    font-weight: 600;
+    letter-spacing: -0.005em;
 }
 
 p {
@@ -73,52 +63,20 @@ img {
     max-width: 100%;
 }
 
-/* ---------- Vidro (glassmorphism) ---------- */
+/* ---------- Superfícies ---------- */
 
-.glass {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--blur));
-    -webkit-backdrop-filter: blur(var(--blur));
-    border: 1px solid var(--glass-border);
-}
-
+.glass,
 .glass-strong {
-    background: var(--glass-strong-bg);
-    backdrop-filter: blur(var(--blur-strong));
-    -webkit-backdrop-filter: blur(var(--blur-strong));
-    border: 1px solid var(--glass-strong-border);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
 }
 
-/* ---------- Entrada animada (stagger) ---------- */
-
-@keyframes fade-in-up {
-    from { opacity: 0; transform: translateY(16px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-@keyframes pulse-glow {
-    0%, 100% { box-shadow: 0 0 0 0 currentColor; opacity: 1; }
-    50% { box-shadow: 0 0 0 5px transparent; opacity: 0.7; }
-}
-
-@keyframes spin-slow {
-    from { transform: rotate(0deg); }
-    to { transform: rotate(360deg); }
-}
-
-.animate-in {
-    animation: fade-in-up 0.5s ease both;
-    animation-delay: var(--stagger-delay, 0s);
-}
-
-.spin-slow {
-    animation: spin-slow 20s linear infinite;
-}
-
-.text-glow-red {
-    color: var(--color-danger);
-    text-shadow: 0 0 16px rgba(239, 68, 68, 0.45);
-}
+/* As classes .animate-in / .spin-slow / .text-glow-red continuam existindo porque alguns
+   templates ainda as aplicam, mas agora não fazem nada: entrada animada e brilho eram
+   decoração, e decoração atrasa a leitura de quem abre esta tela dezenas de vezes por dia. */
+.animate-in { animation: none; }
+.spin-slow { animation: none; }
+.text-glow-red { color: var(--color-danger); }
 
 /* ---------- App shell (layout interno com sidebar) ---------- */
 
@@ -145,9 +103,7 @@ img {
     gap: var(--space-3);
     padding: var(--space-3);
     background: var(--glass-strong-bg);
-    backdrop-filter: blur(var(--blur-strong));
-    -webkit-backdrop-filter: blur(var(--blur-strong));
-    border-right: 1px solid var(--glass-strong-border);
+    border-right: 1px solid var(--color-border);
     position: sticky;
     top: 0;
     height: 100vh;
@@ -159,22 +115,22 @@ img {
     display: flex;
     align-items: center;
     gap: var(--space-2);
-    font-size: 1.2rem;
-    font-weight: 800;
+    font-size: 1.05rem;
+    font-weight: 700;
     color: var(--color-text);
     letter-spacing: -0.01em;
-    padding: 0 var(--space-2);
+    padding: var(--space-2) var(--space-2) var(--space-3);
+    border-bottom: 1px solid var(--color-border);
 }
 
 .sidebar__brand-accent {
     color: var(--color-primary);
-    text-shadow: 0 0 20px rgba(var(--color-primary-rgb), 0.5);
 }
 
 .sidebar__logo {
     width: 28px;
     height: 28px;
-    filter: drop-shadow(0 0 8px rgba(var(--color-primary-rgb), 0.5));
+
 }
 
 .sidebar__nav {
@@ -217,14 +173,39 @@ img {
 
 .sidebar__link:hover {
     color: var(--color-text);
-    background-color: rgba(255, 255, 255, 0.03);
+    background-color: var(--color-surface-2);
 }
 
 .sidebar__link--active {
     color: var(--color-text);
-    background-color: rgba(var(--color-primary-rgb), 0.1);
+    background-color: rgba(var(--color-primary-rgb), 0.13);
     border-left-color: var(--color-primary);
-    text-shadow: 0 0 12px rgba(var(--color-primary-rgb), 0.3);
+    font-weight: 600;
+}
+
+/* Entradas de módulos que ainda não existem. São <span>, não <a>: sem href não há rota para
+   quebrar nem foco de teclado levando a lugar nenhum. Ficam visíveis de propósito — dizem o
+   que vem depois sem prometer que já está pronto. */
+.sidebar__link--futuro {
+    opacity: 0.45;
+    cursor: default;
+}
+
+.sidebar__link--futuro:hover {
+    background-color: transparent;
+    color: var(--color-text-muted);
+}
+
+.sidebar__futuro {
+    margin-left: auto;
+    font-size: 0.56rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    border: 1px solid var(--color-border-strong);
+    border-radius: var(--radius-sm);
+    padding: 0.05rem 0.3rem;
+    white-space: nowrap;
 }
 
 .sidebar__footer {
@@ -303,9 +284,7 @@ img {
     gap: var(--space-3);
     padding: var(--space-3);
     background: var(--glass-strong-bg);
-    backdrop-filter: blur(var(--blur-strong));
-    -webkit-backdrop-filter: blur(var(--blur-strong));
-    border-bottom: 1px solid var(--glass-strong-border);
+    border-bottom: 1px solid var(--color-border);
     position: sticky;
     top: 0;
     z-index: 90;
@@ -392,30 +371,25 @@ img {
 }
 
 .btn--primary {
-    background-color: var(--color-primary);
+    background-color: var(--color-primary-solid);
     color: #fff;
-    box-shadow: 0 0 0 rgba(var(--color-primary-rgb), 0);
 }
 
 .btn--primary:hover {
-    background-color: var(--color-primary-hover);
+    background-color: var(--color-primary-solid-hover);
     color: #fff;
-    box-shadow: 0 0 24px rgba(var(--color-primary-rgb), 0.45);
-    transform: translateY(-1px);
 }
 
 .btn--outline {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--blur));
-    -webkit-backdrop-filter: blur(var(--blur));
-    border-color: var(--glass-border);
+    background: var(--color-surface);
+    border-color: var(--color-border-strong);
     color: var(--color-text);
 }
 
 .btn--outline:hover {
     border-color: var(--color-primary);
     color: var(--color-primary);
-    box-shadow: 0 0 16px rgba(var(--color-primary-rgb), 0.25);
+    background: var(--color-surface-2);
 }
 
 .btn:disabled {
@@ -428,19 +402,11 @@ img {
 /* ---------- Cards ---------- */
 
 .card {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--blur));
-    -webkit-backdrop-filter: blur(var(--blur));
-    border: 1px solid var(--glass-border);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
     border-radius: var(--radius-lg);
     padding: var(--space-4);
-    transition: transform 0.35s ease, box-shadow 0.35s ease, border-color 0.35s ease;
-}
-
-.card:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--shadow-lg);
-    border-color: var(--glass-strong-border);
+    box-shadow: var(--shadow);
 }
 
 .card__title {
@@ -480,15 +446,16 @@ img {
     margin-bottom: var(--space-2);
     border-radius: var(--radius-sm);
     font-size: 1.25rem;
-    background: rgba(var(--color-primary-rgb), 0.12);
-    box-shadow: 0 0 0 1px rgba(var(--color-primary-rgb), 0.18) inset;
+    background: var(--sev-critical-dim);
+    color: var(--color-primary);
+    border: 1px solid var(--color-border);
 }
 
-.icon-chip--success { background: rgba(34, 197, 94, 0.12); box-shadow: 0 0 0 1px rgba(34, 197, 94, 0.2) inset; }
-.icon-chip--warning { background: rgba(234, 179, 8, 0.12); box-shadow: 0 0 0 1px rgba(234, 179, 8, 0.2) inset; }
-.icon-chip--danger  { background: rgba(239, 68, 68, 0.12); box-shadow: 0 0 0 1px rgba(239, 68, 68, 0.2) inset; }
-.icon-chip--info    { background: rgba(59, 130, 246, 0.12); box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2) inset; }
-.icon-chip--orange  { background: rgba(249, 115, 22, 0.12); box-shadow: 0 0 0 1px rgba(249, 115, 22, 0.2) inset; }
+.icon-chip--success { background: var(--sev-healthy-dim); color: var(--color-success); }
+.icon-chip--warning { background: var(--sev-attention-dim); color: var(--color-warning); }
+.icon-chip--danger  { background: var(--sev-critical-dim); color: var(--color-danger); }
+.icon-chip--info    { background: var(--tint-info); color: var(--color-info); }
+.icon-chip--orange  { background: var(--sev-warning-dim); color: var(--color-orange); }
 
 /* ---------- Formulários ---------- */
 
@@ -516,10 +483,8 @@ img {
 .form input,
 .form select,
 .form textarea {
-    background: var(--glass-bg);
-    backdrop-filter: blur(var(--blur));
-    -webkit-backdrop-filter: blur(var(--blur));
-    border: 1px solid var(--glass-border);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border-strong);
     border-radius: var(--radius);
     color: var(--color-text);
     padding: 0.7rem 0.9rem;
@@ -557,8 +522,6 @@ img {
     padding: var(--space-3);
     border-radius: var(--radius);
     background: var(--glass-bg);
-    backdrop-filter: blur(var(--blur));
-    -webkit-backdrop-filter: blur(var(--blur));
     border: 1px solid var(--glass-border);
     border-left: 3px solid var(--color-info);
     margin-bottom: var(--space-3);
@@ -596,8 +559,6 @@ img {
 .pagination__link {
     padding: var(--space-1) var(--space-3);
     background: var(--glass-bg);
-    backdrop-filter: blur(var(--blur));
-    -webkit-backdrop-filter: blur(var(--blur));
     border: 1px solid var(--glass-border);
     border-radius: var(--radius);
     transition: border-color 0.2s ease, color 0.2s ease;
@@ -629,8 +590,15 @@ img {
 .table th,
 .table td {
     text-align: left;
-    padding: var(--space-2) var(--space-3);
-    border-bottom: 1px solid var(--glass-border);
+    padding: 0.45rem var(--space-3);
+    border-bottom: 1px solid var(--color-border);
+}
+
+.table thead th {
+    background: var(--color-surface-3);
+    border-bottom: 1px solid var(--color-border-strong);
+    position: sticky;
+    top: 0;
 }
 
 .table tbody tr {
@@ -638,16 +606,16 @@ img {
 }
 
 .table tbody tr:hover {
-    background-color: rgba(255, 255, 255, 0.02);
+    background-color: var(--color-surface-2);
 }
 
 .table th {
     color: var(--color-text-muted);
     font-weight: 600;
     text-transform: uppercase;
-    font-size: 0.72rem;
-    letter-spacing: 0.06em;
-    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
 }
 
 .table td {
@@ -678,26 +646,29 @@ img {
     flex-shrink: 0;
 }
 
-.badge--success { background-color: rgba(34, 197, 94, 0.15); color: var(--color-success); }
-.badge--warning { background-color: rgba(234, 179, 8, 0.15); color: var(--color-warning); }
-.badge--danger  { background-color: rgba(239, 68, 68, 0.15); color: var(--color-danger); }
-.badge--info    { background-color: rgba(59, 130, 246, 0.15); color: var(--color-info); }
+.badge--success { background-color: var(--sev-healthy-dim); color: var(--color-success); }
+.badge--warning { background-color: var(--sev-attention-dim); color: var(--color-warning); }
+.badge--danger  { background-color: var(--sev-critical-dim); color: var(--color-danger); }
+.badge--info    { background-color: var(--tint-info); color: var(--color-info); }
 
-.badge--success::before {
-    animation: pulse-glow 2s ease-in-out infinite;
-}
 
 /* ---------- Cabeçalho de página ---------- */
 
 .page-header {
     margin-bottom: var(--space-4);
+    padding-bottom: var(--space-3);
+    border-bottom: 1px solid var(--color-border);
 }
 
 .page-header h1 {
-    font-size: 1.8rem;
+    font-size: 1.35rem;
+    font-weight: 600;
+    margin-bottom: var(--space-1);
 }
 
 .page-header__subtitle {
     color: var(--color-text-muted);
-    max-width: 70ch;
+    font-size: 0.86rem;
+    max-width: 88ch;
+    margin-bottom: 0;
 }

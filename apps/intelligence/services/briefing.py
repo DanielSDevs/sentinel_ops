@@ -1,4 +1,10 @@
-"""AI Operational Briefing — narrativa gerada a partir dos números reais.
+"""Briefing operacional — o resumo do turno montado a partir dos números reais.
+
+Este módulo **não** usa modelo de linguagem. Ele compõe frases por template, preenchidas com
+valores calculados pelos outros serviços. O nome anterior ("AI Operational Briefing") dizia o
+contrário e foi corrigido: chamar template de IA é vender o que não existe, e derruba a
+credibilidade de tudo que a plataforma afirma. Se um dia entrar uma camada de linguagem aqui,
+o rótulo pode voltar — até lá, não.
 
 O briefing responde três perguntas na ordem em que um analista sênior as responderia:
 **o que mudou → por que importa → o que fazer**.
@@ -61,7 +67,7 @@ def montar(janela_dias=7):
     if not partes:
         partes.append(
             f'Operação dentro do padrão esperado: Health Score em {saude.score}/100 e nenhum '
-            'produto acima do limiar de risco.'
+            'produto em risco relevante.'
         )
     por_que_importa = ' '.join(partes)
 

@@ -216,10 +216,10 @@ class RotasTest(TesteDeTela):
         'core:home', 'core:dados', 'core:sobre',
         'monitor:live', 'monitor:saude', 'monitor:incidentes',
         'forecast:index', 'forecast:modelo',
+        'ml:modelos', 'ml:previsoes',
         'intelligence:risk', 'intelligence:anomaly', 'intelligence:correlation',
         'intelligence:insights',
         'alerts:index', 'alerts:decisao',
-        'copilot:index',
         'reports:diario', 'reports:executivo',
     ]
 

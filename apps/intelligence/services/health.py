@@ -95,12 +95,12 @@ def calcular(janela_dias=JANELA_PADRAO):
     razao = base.taxa(media_atual, media_baseline)
     fatores.append(Fator(
         slug='volume',
-        nome='Volume elegível vs. baseline',
+        nome='Volume elegível vs. padrão recente',
         peso=25,
         penalidade=_limitar((razao - 1) / 0.5) if razao > 1 else 0.0,
         valor_exibido=f'{media_atual:.0f}/dia',
         explicacao=(
-            f'Média de {media_atual:.1f} incidentes elegíveis por dia, contra baseline de '
+            f'Média de {media_atual:.1f} incidentes elegíveis por dia, contra padrão de '
             f'{media_baseline:.1f}/dia nos últimos {JANELA_BASELINE} dias.'
         ),
         detalhe_calculo='penalidade = (média_atual ÷ baseline − 1) ÷ 0,5 · só penaliza aumento',
@@ -146,12 +146,12 @@ def calcular(janela_dias=JANELA_PADRAO):
     razao_mttr = base.taxa(mttr_atual, mttr_baseline)
     fatores.append(Fator(
         slug='mttr',
-        nome='MTTR vs. baseline',
+        nome='MTTR vs. padrão recente',
         peso=10,
         penalidade=_limitar((razao_mttr - 1) / 0.5) if razao_mttr > 1 else 0.0,
         valor_exibido=f'{mttr_atual:.0f} min',
         explicacao=(
-            f'Tempo médio de resolução de {mttr_atual:.0f} min, contra baseline de '
+            f'Tempo médio de resolução de {mttr_atual:.0f} min, contra padrão de '
             f'{mttr_baseline:.0f} min.'
         ),
         detalhe_calculo='penalidade = (MTTR_atual ÷ MTTR_baseline − 1) ÷ 0,5',

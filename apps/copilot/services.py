@@ -15,6 +15,7 @@ from apps.alerts.services import fila_de_decisao
 from apps.forecast import services as forecast_services
 from apps.intelligence.services import anomaly, deltas, health, insights, risk
 from apps.intelligence.services.base import DIM
+from apps.ml.services import catalogo, inferencia
 
 
 @dataclass
@@ -32,6 +33,8 @@ SUGESTOES = [
     'O que devo priorizar agora?',
     'Existe alguma anomalia ativa?',
     'Qual a previsão para amanhã?',
+    'Quais modelos de ML estão em uso?',
+    'Por que o modelo prevê esse volume?',
     'Gerar resumo executivo',
 ]
 
@@ -99,10 +102,10 @@ def _prioridades():
 def _anomalias():
     achadas = anomaly.detectar_por_dimensao(DIM.FAMILIA, limite=4)
     if not achadas:
-        return Resposta('Nenhuma anomalia acima do limiar (z ≥ 2) nas famílias de sinal.')
+        return Resposta('Nenhum desvio relevante nas famílias de sinal.')
     pontos = [
         f'{a.chave} em {a.data:%d/%m}: {a.observado} ocorrências vs. faixa esperada '
-        f'{a.esperado_min}–{a.esperado_max} (z={a.z}, confiança {a.confianca}%)'
+        f'{a.esperado_min}–{a.esperado_max} (confiança {a.confianca}%)'
         for a in achadas
     ]
     return Resposta(
@@ -131,13 +134,76 @@ def _resumo_executivo():
     pontos = [f'{i.titulo} — {i.acao}' for i in principais]
     texto = (
         f'Status operacional em 30 dias: {saude.rotulo.upper()} (score {saude.score}/100). '
-        f'{len(em_risco)} serviço(s) acima do limiar de atenção'
+        f'{len(em_risco)} serviço(s) exigindo atenção'
         + (f', com destaque para {em_risco[0].chave}.' if em_risco else '.')
     )
     return Resposta(texto, pontos, 'reports:executivo', 'Abrir Executive Report')
 
 
+def _modelos():
+    """Qual modelo está no ar, treinado com o quê e com que resultado."""
+    cartoes = catalogo.tabela_resumo()
+    if not cartoes:
+        return Resposta(
+            'Nenhum modelo de Machine Learning treinado ainda. Rode '
+            '`python manage.py treinar_modelos` para treinar sobre a base importada.',
+        )
+    execucao = catalogo.execucao() or {}
+    pontos = [
+        f'{linha["titulo"]}: {linha["algoritmo"]} · {linha["metrica"]} = {linha["valor"]} '
+        f'({linha["particao"]})'
+        + (f' · {linha["ganho"]:+.0f}% vs. baseline' if linha['ganho'] is not None else '')
+        for linha in cartoes
+    ]
+    return Resposta(
+        f'{len(cartoes)} modelos treinados sobre {execucao.get("incidentes", "?")} incidentes '
+        f'entre {execucao.get("inicio_regime", "?")} e {execucao.get("fim_dados", "?")}. '
+        f'Cada métrica abaixo foi medida na partição que não participou da escolha do modelo.',
+        pontos, 'ml:modelos', 'Abrir Modelos de ML',
+    )
+
+
+def _explicacao_previsao():
+    """Por que o modelo prevê o que prevê — contribuições do próprio modelo."""
+    explicacao = inferencia.explicar()
+    if not explicacao:
+        return Resposta('Sem modelo treinado, não há previsão para explicar.')
+    pontos = [
+        f'{item["descricao"]}: {item["sentido"]} a previsão em '
+        f'{abs(item["contribuicao"]):.1f} (valor observado: {item["valor"]})'
+        for item in explicacao['contribuicoes']
+    ]
+    return Resposta(
+        f'A previsão de amanhã parte de um dia médio de {explicacao["valor_base"]} incidentes e '
+        f'é ajustada pelos fatores abaixo — são os que o próprio modelo usou para chegar ao '
+        f'número, não uma justificativa escrita depois.',
+        pontos, 'forecast:index', 'Abrir Forecast Engine',
+    )
+
+
+def _risco_ola_ml():
+    risco = inferencia.risco_ola_global()
+    equipes = inferencia.risco_ola(dimensao='equipe', limite=5)
+    if not risco:
+        return Resposta('Modelo de risco de OLA ainda não treinado.')
+    pontos = [
+        f'{item["chave"]}: risco {item["risco"]}% · {item["volume_previsto"]} incidentes '
+        f'previstos · {item["violacoes_esperadas"]} violações esperadas'
+        for item in (equipes or [])
+    ]
+    return Resposta(
+        f'O risco de ao menos uma violação de OLA amanhã é {risco["faixa"]} '
+        f'({risco["risco"]}%). Ele junta duas estimativas: a chance de um incidente estourar o '
+        f'prazo ({risco["probabilidade_incidente"]}%) e o volume previsto para o dia '
+        f'({risco["volume_previsto"]} incidentes).',
+        pontos, 'alerts:index', 'Abrir Alert Center',
+    )
+
+
 INTENCOES = [
+    (r'modelo|machine learning|algoritmo|acur|métrica|metrica|mae|auc|treinad', _modelos),
+    (r'por que|porque|explica|fator|contribu|shap', _explicacao_previsao),
+    (r'risco de ola|risco de sla|violar ola|perda de ola|probabilidade de viol', _risco_ola_ml),
     (r'health|saúde|saude|score|caiu|caindo', _health),
     (r'mudou|mudan|últimas|ultimas|24h|desde', _mudancas),
     (r'risco|falhar|violar|ola|sla', _riscos),
@@ -159,7 +225,8 @@ def responder(pergunta):
 
     return Resposta(
         'Ainda não sei responder isso. Consigo explicar o Operational Health, o que mudou no período, '
-        'riscos de violação de OLA, prioridades de ação, anomalias detectadas, a previsão de volume e '
-        'gerar um resumo executivo — sempre a partir dos dados carregados.',
+        'riscos de violação de OLA, prioridades de ação, anomalias detectadas, a previsão de volume, '
+        'quais modelos de ML estão em uso e por que o modelo chegou à previsão que fez — sempre a '
+        'partir dos dados carregados e dos modelos treinados.',
         SUGESTOES,
     )

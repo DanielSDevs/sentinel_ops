@@ -1,115 +1,117 @@
 {% extends 'base.html' %}
-{% load static sentinel %}
+{% load static sentinel modelos %}
 
 {% block title %}SentinelOps — Forecast Engine{% endblock %}
 
 {% block extra_css %}<link rel="stylesheet" href="{% static 'forecast/css/forecast.css' %}">{% endblock %}
 
+{% block extra_js %}<script src="{% static 'forecast/js/forecast.js' %}"></script>{% endblock %}
+
 {% block content %}
 <div class="page-header">
     <h1>Forecast Engine</h1>
     <p class="page-header__subtitle">
-        Previsão de volume elegível a KPI para D+1 e D+7 — com faixa de erro derivada do desempenho
-        real do modelo em backtest, não de um intervalo arbitrado.
+        Volume esperado de incidentes elegíveis a KPI para amanhã e os próximos 7 dias, por grupo e produto.
     </p>
 </div>
 
-{% if previsao %}
-<section class="secao">
-    <div class="grid grid--2" style="grid-template-columns:minmax(300px,1fr) minmax(320px,1.3fr)">
-        <div class="card">
-            <h2 class="card__title">Previsão</h2>
-            <div class="tiles" style="grid-template-columns:1fr 1fr">
-                <div class="tile">
-                    <span class="tile__label">D+1 · {{ previsao.d1.dia_semana }} {{ previsao.d1.data|date:"d/m" }}</span>
-                    <span class="tile__valor">{{ previsao.d1.valor }}</span>
-                    <span class="tile__sub">faixa {{ previsao.d1.minimo }}–{{ previsao.d1.maximo }}</span>
-                </div>
-                <div class="tile">
-                    <span class="tile__label">D+7 acumulado</span>
-                    <span class="tile__valor">{{ previsao.d7_total }}</span>
-                    <span class="tile__sub">faixa {{ previsao.d7_min }}–{{ previsao.d7_max }}</span>
-                </div>
-            </div>
-            <div class="tile" style="margin-top:var(--space-3)">
-                <span class="tile__label">Tendência vs. semana anterior</span>
-                <span class="tile__valor {{ previsao.tendencia|classe_variacao }}">
-                    {% if previsao.tendencia is not None %}{{ previsao.tendencia }}%{% else %}—{% endif %}
-                </span>
-                <span class="tile__sub">média recente de {{ previsao.media_recente }}/dia</span>
-            </div>
-        </div>
+{% if not previsao %}
+<div class="insight insight--warning">
+    <div class="insight__campo">
+        <span class="insight__rotulo">Modelo ainda não treinado</span>
+        <span class="insight__texto">
+            Nenhum artefato de previsão encontrado em <span class="mono">ml/models/</span>. Rode
+            <span class="mono">python manage.py treinar_modelos</span>. Enquanto não houver modelo,
+            esta tela não mostra previsão — número sem modelo por trás não é previsão, é chute com
+            aparência de dado.
+        </span>
+    </div>
+</div>
+{% else %}
 
-        <div class="card">
-            <h2 class="card__title">Leitura da previsão</h2>
-            <p class="briefing__texto">{{ interpretacao }}</p>
-            <details class="explain">
-                <summary>Como o modelo funciona</summary>
-                <div class="explain__corpo">
-                    <div class="explain__formula">previsão(dia) = 0,65 × [nível_recente × perfil(dia_da_semana)] + 0,35 × volume(mesmo dia, semana passada)</div>
-                    O nível é a média dos últimos 14 dias — é o que faz o modelo acompanhar uma
-                    mudança de patamar. O perfil é o quanto cada dia da semana rende em relação à
-                    média (domingo pesa menos que terça) e vem do histórico longo, onde há amostra
-                    para estimá-lo. O último termo ancora a previsão no dado real mais recente
-                    daquele mesmo dia da semana. A faixa é o erro que o modelo de fato comete
-                    naquele dia da semana em backtest walk-forward. Detalhes em
-                    <a href="{% url 'forecast:modelo' %}">Model Performance</a>.
-                </div>
-            </details>
+<section class="secao">
+    <div class="tiles">
+        <div class="tile">
+            <span class="tile__label">D+1 · {{ previsao.d1.dia_semana }} {{ previsao.d1.data|date:"d/m" }}</span>
+            <span class="tile__valor">{{ previsao.d1.valor }}</span>
+            <span class="tile__sub">faixa {{ previsao.d1.minimo }}–{{ previsao.d1.maximo }}</span>
         </div>
+        <div class="tile">
+            <span class="tile__label">D+7 acumulado</span>
+            <span class="tile__valor">{{ previsao.d7_total }}</span>
+            <span class="tile__sub">faixa {{ previsao.d7_min }}–{{ previsao.d7_max }}</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Variação esperada em D+1</span>
+            <span class="tile__valor {{ previsao.variacao_d1|classe_variacao }}">
+                {% if previsao.variacao_d1 is not None %}{{ previsao.variacao_d1|sinal }}{{ previsao.variacao_d1 }}%{% else %}—{% endif %}
+            </span>
+            <span class="tile__sub">contra a média de {{ previsao.media_recente }}/dia</span>
+        </div>
+        {% if risco_ola %}
+        <div class="tile">
+            <span class="tile__label">Risco de perda de OLA (D+1)</span>
+            <span class="tile__valor sev-{{ risco_ola.faixa|faixa_risco }}">{{ risco_ola.risco }}%</span>
+            <span class="tile__sub">{{ risco_ola.violacoes_esperadas }} violações esperadas</span>
+        </div>
+        {% endif %}
+        {% if previsao.d1.probabilidade_pico is not None %}
+        <div class="tile">
+            <span class="tile__label">Chance de pico amanhã</span>
+            <span class="tile__valor sev-{{ previsao.d1.probabilidade_pico|classe_chance }}">
+                {{ previsao.d1.probabilidade_pico|rotulo_chance }}
+            </span>
+            <span class="tile__sub" title="chance estimada: {{ previsao.d1.probabilidade_pico|porcentagem:0 }}">
+                de o dia entrar entre os mais carregados
+            </span>
+        </div>
+        {% endif %}
     </div>
 </section>
 
 <section class="secao">
-    <div class="card">
-        <h2 class="card__title">Volume previsto — próximos 7 dias</h2>
-        <div class="forecast-chart">
-            {% for p in previsao.previsoes %}
-            <div class="forecast-chart__bar">
-                <div class="forecast-chart__fill" data-altura="{{ p.altura_pct }}" style="height:0%"
-                     title="{{ p.data|date:'d/m' }}: {{ p.valor }} (faixa {{ p.minimo }}–{{ p.maximo }})"></div>
-                <span class="forecast-chart__label">{{ p.dia_semana }}</span>
-            </div>
-            {% endfor %}
-        </div>
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">Como deve estar a operação nos próximos dias?</h2>
+        <span class="secao__meta">últimos {{ historico|length }} dias observados + {{ previsao.previsoes|length }} dias previstos</span>
     </div>
-</section>
-
-<section class="secao">
-    <div class="secao__cabecalho"><h2 class="secao__titulo">Risk Calendar — próximas 3 semanas</h2></div>
     <div class="card">
-        <p class="card__subtitle">Dias com volume previsto acima da média merecem reforço de escala.</p>
-        <div class="heat" style="margin-top:var(--space-3)">
-            <div class="heat__cabecalho">Seg</div><div class="heat__cabecalho">Ter</div>
-            <div class="heat__cabecalho">Qua</div><div class="heat__cabecalho">Qui</div>
-            <div class="heat__cabecalho">Sex</div><div class="heat__cabecalho">Sáb</div>
-            <div class="heat__cabecalho">Dom</div>
-            {% for dia in calendario %}
-            <div class="heat__cel" style="background:{{ dia.faixa|cor_severidade }}1f;border-color:{{ dia.faixa|cor_severidade }}55"
-                 title="{{ dia.data|date:'d/m/Y' }}: {{ dia.valor }} incidentes previstos">
-                <span class="heat__dia">{{ dia.data|date:"d/m" }}</span>
-                <span class="heat__val sev-{{ dia.faixa }}">{{ dia.valor }}</span>
-            </div>
-            {% endfor %}
+        {% grafico_previsao historico previsao.previsoes %}
+        <div class="graf-legenda" style="margin-top:var(--space-2)">
+            <span class="graf-legenda__item">
+                <span class="graf-legenda__marca" style="background:var(--sev-neutral)"></span> observado
+            </span>
+            <span class="graf-legenda__item">
+                <span class="graf-legenda__marca" style="background:var(--color-primary)"></span> esperado
+            </span>
+            <span class="graf-legenda__item">
+                <span class="graf-legenda__marca" style="background:var(--color-primary);opacity:.3"></span> faixa provável
+            </span>
+            <span class="graf-legenda__item">
+                <span class="graf-legenda__marca" style="background:var(--sev-critical);border-radius:50%;width:8px;height:8px"></span> dia com chance alta de pico
+            </span>
+            <span class="graf-legenda__item" style="margin-left:auto;opacity:.75">
+                passe o ponteiro sobre o gráfico para ver o dia
+            </span>
         </div>
-    </div>
-</section>
 
-<section class="secao">
-    <div class="secao__cabecalho"><h2 class="secao__titulo">Tendência por família de sinal</h2></div>
-    <div class="card">
-        <div class="table-wrapper">
+        <div class="table-wrapper" style="margin-top:var(--space-4)">
             <table class="table">
-                <thead><tr><th>Família de sinal</th><th>Elegíveis (14d)</th><th>Variação</th></tr></thead>
+                <thead>
+                    <tr><th>Dia</th><th>Esperado</th><th>Faixa provável</th><th>Chance de pico</th></tr>
+                </thead>
                 <tbody>
-                    {% for t in tendencias %}
+                    {% for p in previsao.previsoes %}
                     <tr>
-                        <td>{{ t.nome }}</td>
-                        <td class="num">{{ t.recentes }}</td>
-                        <td>
-                            {% if t.variacao is not None %}
-                            <span class="chip chip--{% if t.variacao > 15 %}critical{% elif t.variacao > 0 %}warning{% else %}healthy{% endif %}">{{ t.variacao }}%</span>
-                            {% else %}<span class="chip chip--neutral">sem base</span>{% endif %}
+                        <td class="mono">{{ p.dia_semana }} {{ p.data|date:"d/m" }}</td>
+                        <td class="num"><strong>{{ p.valor }}</strong></td>
+                        <td class="num" style="opacity:.75">{{ p.minimo }}–{{ p.maximo }}</td>
+                        <td class="num">
+                            {% if p.probabilidade_pico is not None %}
+                                <span class="sev-{{ p.probabilidade_pico|classe_chance }}"
+                                      title="chance estimada: {{ p.probabilidade_pico|porcentagem:0 }}">
+                                    {{ p.probabilidade_pico|rotulo_chance }}
+                                </span>
+                            {% else %}—{% endif %}
                         </td>
                     </tr>
                     {% endfor %}
@@ -118,9 +120,225 @@
         </div>
     </div>
 </section>
-{% else %}
-<p class="vazio">Histórico insuficiente para gerar previsão.</p>
+
+<section class="secao">
+    <div class="secao__cabecalho"><h2 class="secao__titulo">Leitura da previsão</h2></div>
+    <div class="card">
+        <p class="briefing__texto">{{ interpretacao }}</p>
+    </div>
+</section>
+
+{% if previsao.explicacao %}
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">O que está puxando esse número</h2>
+        <span class="secao__meta">
+            <a href="{% url 'ml:detalhe' previsao.d1.modelo %}">ver detalhes técnicos →</a>
+        </span>
+    </div>
+    <div class="card">
+        <p class="card__subtitle">
+            Partindo de um dia médio de {{ previsao.explicacao.valor_base }} incidentes, cada fator
+            abaixo empurrou a expectativa de amanhã para cima (vermelho) ou para baixo (verde), na
+            quantidade de incidentes indicada. São os fatores que o próprio modelo usou para chegar
+            ao número — não uma justificativa escrita depois.
+        </p>
+        <div class="shap" style="margin-top:var(--space-3)">
+            {% with maximo=previsao.explicacao.contribuicoes.0.contribuicao %}
+            {% for item in previsao.explicacao.contribuicoes %}
+            <div class="shap__row">
+                <span class="contrib__nome">
+                    {{ item.descricao }}
+                    <span class="mono" style="opacity:.55;font-size:.72rem">= {{ item.valor }}</span>
+                </span>
+                {% barra_shap item.contribuicao maximo %}
+                <span class="shap__valor {% if item.contribuicao > 0 %}sev-critical{% else %}sev-healthy{% endif %}">
+                    {{ item.contribuicao|sinal }}{{ item.contribuicao }}
+                </span>
+            </div>
+            {% endfor %}
+            {% endwith %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% if picos %}
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">Picos previstos — onde, quando e o que fazer</h2>
+        <span class="secao__meta">por grupo, produto e categoria</span>
+    </div>
+    {% if modelo_pico %}
+    <div class="insight" style="margin-bottom:var(--space-3)">
+        <div class="insight__campo">
+            <span class="insight__rotulo">Como usar esta lista</span>
+            <span class="insight__texto">
+                A lista pega cerca de <strong>7 em cada 10 picos que de fato acontecem</strong>, mas
+                em troca avisa mais vezes do que o necessário — boa parte dos dias apontados acaba
+                normal. Ela serve para <strong>dizer onde olhar primeiro</strong>, não para acionar
+                escala extra sozinha: confirme o cenário do grupo antes de mobilizar gente.
+                <a href="{% url 'ml:detalhe' 'model_pico' %}">Ver detalhes técnicos →</a>
+            </span>
+        </div>
+    </div>
+    {% endif %}
+    <div class="pilha">
+        {% for pico in picos %}
+        <div class="risco risco--{% if pico.probabilidade >= 0.7 %}critical{% else %}warning{% endif %}">
+            <div class="risco__topo">
+                <span class="risco__nome">
+                    {{ pico.chave }}
+                    <span class="chip chip--neutral">{{ pico.dimensao }}</span>
+                </span>
+                <span class="risco__score">{{ pico.probabilidade|floatformat:2 }}</span>
+            </div>
+            <div class="risco__medidas">
+                <span class="risco__medida">
+                    <strong>{{ pico.dia_semana }} {{ pico.data|date:"d/m" }}</strong> (D+{{ pico.horizonte }})
+                </span>
+                <span class="risco__medida">volume previsto: <strong>{{ pico.valor }}</strong></span>
+                <span class="risco__medida">média recente: {{ pico.media_recente }}</span>
+                <span class="risco__medida">
+                    ~{{ pico.p2_esperados }} P2 esperados
+                    ({{ pico.share_p2|floatformat:2 }} da carga na última semana)
+                </span>
+                {% if pico.variacao is not None %}
+                <span class="risco__medida {{ pico.variacao|classe_variacao }}">
+                    {{ pico.variacao|sinal }}{{ pico.variacao }}% sobre o normal
+                </span>
+                {% endif %}
+            </div>
+            <p class="risco__acao">
+                Reforçar a escala de <strong>{{ pico.chave }}</strong> em
+                {{ pico.data|date:"d/m" }} e revisar a fila pendente na véspera: o modelo estima
+                probabilidade {{ pico.probabilidade|floatformat:2 }} de o dia entrar no topo 20%
+                do volume histórico dessa entidade.
+            </p>
+        </div>
+        {% endfor %}
+    </div>
+</section>
+{% endif %}
+
+{% if por_prioridade %}
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">Previsão por prioridade</h2>
+        <span class="secao__meta">P2 e P3 são as prioridades medidas por OLA neste extrato</span>
+    </div>
+    <div class="card">
+        <p class="card__subtitle">
+            Não há modelo separado para prioridade: P2 e P3 são duas séries a mais do mesmo painel,
+            previstas pelo mesmo modelo. É o que permite responder "quantos P2 esperar amanhã" sem
+            multiplicar artefatos — e mantém a previsão por prioridade coerente com a previsão total.
+        </p>
+        <div class="table-wrapper" style="margin-top:var(--space-3)">
+            <table class="table">
+                <thead>
+                    <tr><th>Prioridade</th><th>D+1</th><th>D+7 total</th><th>Média recente</th>
+                        <th>Variação</th><th>Maior prob. de pico</th></tr>
+                </thead>
+                <tbody>
+                    {% for linha in por_prioridade %}
+                    <tr>
+                        <td><strong>{{ linha.chave }}</strong></td>
+                        <td class="num">{{ linha.d1 }}</td>
+                        <td class="num">{{ linha.d7_total }}</td>
+                        <td class="num" style="opacity:.7">{{ linha.media_recente }}</td>
+                        <td class="num {{ linha.variacao|classe_variacao }}">
+                            {% if linha.variacao is not None %}{{ linha.variacao|sinal }}{{ linha.variacao }}%{% else %}—{% endif %}
+                        </td>
+                        <td class="num">{{ linha.probabilidade_pico|floatformat:2 }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% for bloco in blocos_dimensao %}
+{% if bloco.linhas %}
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">Previsão por {{ bloco.titulo }}</h2>
+        <span class="secao__meta">{{ bloco.nota }}</span>
+    </div>
+    <div class="card">
+        <div class="table-wrapper">
+            <table class="table">
+                <thead>
+                    <tr><th>{{ bloco.coluna }}</th><th>D+1</th><th>D+7 total</th><th>Média recente</th>
+                        <th>Variação</th><th>Maior prob. de pico</th><th>Dia mais pesado</th></tr>
+                </thead>
+                <tbody>
+                    {% for linha in bloco.linhas %}
+                    <tr>
+                        <td><strong>{{ linha.chave }}</strong></td>
+                        <td class="num">{{ linha.d1 }}</td>
+                        <td class="num">{{ linha.d7_total }}</td>
+                        <td class="num" style="opacity:.7">{{ linha.media_recente }}</td>
+                        <td class="num {{ linha.variacao|classe_variacao }}">
+                            {% if linha.variacao is not None %}{{ linha.variacao|sinal }}{{ linha.variacao }}%{% else %}—{% endif %}
+                        </td>
+                        <td class="num">{{ linha.probabilidade_pico|floatformat:2 }}</td>
+                        <td class="mono">{{ linha.dia_pico|date:"d/m" }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endfor %}
+
+{% if calendario %}
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">Calendário de risco</h2>
+        <span class="secao__meta">cor pela probabilidade de pico, altura pelo volume previsto</span>
+    </div>
+    <div class="card">
+        <div class="heat">
+            {% for dia in calendario %}
+            <div class="heat__cel" style="background:{{ dia.faixa|cor_severidade }};opacity:{{ dia.intensidade|floatformat:0 }}%">
+                <span class="heat__dia">{{ dia.data|date:"d/m" }}</span>
+                <span class="heat__val">{{ dia.valor }}</span>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+{% endif %}
+
+{% if tendencias %}
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">O que já mudou por família de sinal</h2>
+        <span class="secao__meta">descritivo — duas metades do último mês</span>
+    </div>
+    <div class="card">
+        <div class="table-wrapper">
+            <table class="table">
+                <thead><tr><th>Família de sinal</th><th>Últimos 14 dias</th><th>Variação</th></tr></thead>
+                <tbody>
+                    {% for linha in tendencias %}
+                    <tr>
+                        <td>{{ linha.nome }}</td>
+                        <td class="num">{{ linha.recentes }}</td>
+                        <td class="num {{ linha.variacao|classe_variacao }}">
+                            {% if linha.variacao is not None %}{{ linha.variacao|sinal }}{{ linha.variacao }}%{% else %}—{% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endif %}
 {% endif %}
 {% endblock %}
-
-{% block extra_js %}<script src="{% static 'forecast/js/forecast.js' %}"></script>{% endblock %}

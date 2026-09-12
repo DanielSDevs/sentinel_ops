@@ -24,6 +24,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Marca o link ativo da sidebar conforme a URL atual
     document.querySelectorAll('.sidebar__link').forEach((link) => {
         const href = link.getAttribute('href');
+        // As entradas "Por vir" são <span> sem href: não têm rota para casar.
+        if (!href) return;
         if (href === window.location.pathname ||
             (href !== '/' && window.location.pathname.startsWith(href))) {
             link.classList.add('sidebar__link--active');
@@ -33,13 +35,5 @@ document.addEventListener('DOMContentLoaded', () => {
     // Fecha alertas
     document.querySelectorAll('[data-alert-close]').forEach((btn) => {
         btn.addEventListener('click', () => btn.closest('.alert').remove());
-    });
-
-    // Entrada escalonada (stagger) dos cartões em grid
-    document.querySelectorAll('.grid').forEach((grid) => {
-        Array.from(grid.children).forEach((card, i) => {
-            card.style.setProperty('--stagger-delay', `${i * 0.08}s`);
-            card.classList.add('animate-in');
-        });
     });
 });

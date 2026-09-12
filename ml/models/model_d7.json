@@ -1,0 +1,1040 @@
+{
+  "nome": "model_d7",
+  "versao_formato": 1,
+  "treinado_em": "2026-09-12T00:08:40+00:00",
+  "titulo": "04",
+  "objetivo": "Volume diário dos próximos 7 dias, por entidade.",
+  "tipo": "regressao",
+  "ordem": 2,
+  "notebook": "modelos_ml/04_previsao_volume_d7.ipynb",
+  "algoritmo": "LGBMRegressor",
+  "candidato": "LightGBM",
+  "hiperparametros": {
+    "n_estimators": 400,
+    "learning_rate": 0.08,
+    "num_leaves": 15,
+    "min_child_samples": 40,
+    "colsample_bytree": 0.7
+  },
+  "alvo": "total_kpi em t+1..t+7",
+  "horizontes": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7
+  ],
+  "features": [
+    "lag_0",
+    "lag_1",
+    "lag_2",
+    "lag_3",
+    "lag_4",
+    "lag_5",
+    "lag_6",
+    "lag_7",
+    "lag_13",
+    "lag_14",
+    "lag_20",
+    "lag_21",
+    "lag_27",
+    "lag_28",
+    "soma_1",
+    "soma_2",
+    "soma_3",
+    "soma_7",
+    "soma_14",
+    "soma_30",
+    "media_3",
+    "media_7",
+    "media_14",
+    "media_28",
+    "desvio_7",
+    "desvio_14",
+    "desvio_28",
+    "min_7",
+    "max_7",
+    "max_28",
+    "var_7_vs_7",
+    "razao_7_28",
+    "delta_media_7_14",
+    "cv_28",
+    "dias_ativos_28",
+    "media_expandida",
+    "criticos_media_7",
+    "criticos_media_28",
+    "p2_media_7",
+    "p2_media_28",
+    "p3_media_7",
+    "p3_media_28",
+    "violacoes_media_7",
+    "violacoes_media_28",
+    "total_media_7",
+    "monitoramento_media_7",
+    "itens_distintos_media_7",
+    "familias_distintas_media_7",
+    "mttr_medio_media_7",
+    "mttr_medio_media_28",
+    "taxa_violacao_media_7",
+    "taxa_violacao_media_28",
+    "resolvidos_media_7",
+    "share_criticos_7",
+    "share_p2_7",
+    "share_p3_7",
+    "share_ruido_7",
+    "delta_mttr",
+    "delta_taxa_violacao",
+    "share_global_28",
+    "dim_global",
+    "dim_produto",
+    "dim_equipe",
+    "dim_categoria",
+    "dim_prioridade",
+    "dim_item",
+    "horizonte",
+    "mesmo_dow_1",
+    "mesmo_dow_2",
+    "mesmo_dow_3",
+    "mesmo_dow_4",
+    "media_mesmo_dow_4",
+    "dow",
+    "dia_mes",
+    "mes",
+    "semana_ano",
+    "fim_de_semana",
+    "feriado",
+    "vespera_feriado",
+    "pos_feriado",
+    "dow_sin",
+    "dow_cos",
+    "mes_sin",
+    "mes_cos",
+    "dow_origem"
+  ],
+  "n_features": 85,
+  "entidades": 55,
+  "metrica_principal": "mae",
+  "particoes": {
+    "treino": {
+      "linhas": 100947,
+      "inicio": "2025-02-12",
+      "fim": "2025-11-05"
+    },
+    "validacao": {
+      "linhas": 10780,
+      "inicio": "2025-11-06",
+      "fim": "2025-12-03"
+    },
+    "teste": {
+      "linhas": 10780,
+      "inicio": "2025-12-04",
+      "fim": "2025-12-31"
+    }
+  },
+  "metricas": {
+    "validacao": {
+      "mae": 1.9068,
+      "rmse": 3.9218,
+      "mape": 53.4755,
+      "r2": 0.8702,
+      "vies": -0.1324,
+      "n": 10780,
+      "mae_baseline": 2.4422,
+      "mase": 0.7807,
+      "ganho_vs_baseline": 21.9251
+    },
+    "teste": {
+      "mae": 2.136,
+      "rmse": 5.1664,
+      "mape": 84.1309,
+      "r2": 0.6637,
+      "vies": -1.1584,
+      "n": 10780,
+      "mae_baseline": 2.2435,
+      "mase": 0.9521,
+      "ganho_vs_baseline": 4.7908
+    },
+    "teste_por_dimensao": {
+      "categoria": {
+        "mae": 1.7955,
+        "rmse": 2.7216,
+        "mape": 79.7651,
+        "r2": 0.3698,
+        "vies": -0.8088,
+        "n": 2352,
+        "mae_baseline": 2.0387,
+        "mase": 0.8807,
+        "ganho_vs_baseline": 11.9295
+      },
+      "equipe": {
+        "mae": 2.0899,
+        "rmse": 4.0839,
+        "mape": 87.498,
+        "r2": 0.633,
+        "vies": -1.0274,
+        "n": 2352,
+        "mae_baseline": 2.2321,
+        "mase": 0.9363,
+        "ganho_vs_baseline": 6.3746
+      },
+      "global": {
+        "mae": 18.514,
+        "rmse": 25.2714,
+        "mape": 87.0982,
+        "r2": -0.5053,
+        "vies": -15.2332,
+        "n": 196,
+        "mae_baseline": 17.1429,
+        "mase": 1.08,
+        "ganho_vs_baseline": -7.9983
+      },
+      "item": {
+        "mae": 0.7219,
+        "rmse": 0.9827,
+        "mape": 49.5522,
+        "r2": 0.0722,
+        "vies": -0.3808,
+        "n": 1568,
+        "mae_baseline": 0.6875,
+        "mase": 1.05,
+        "ganho_vs_baseline": -5.0007
+      },
+      "prioridade": {
+        "mae": 8.6985,
+        "rmse": 13.8915,
+        "mape": 152.6969,
+        "r2": 0.2931,
+        "vies": -5.6244,
+        "n": 392,
+        "mae_baseline": 9.3929,
+        "mase": 0.9261,
+        "ganho_vs_baseline": 7.3927
+      },
+      "produto": {
+        "mae": 1.4586,
+        "rmse": 2.7085,
+        "mape": 79.9776,
+        "r2": 0.5746,
+        "vies": -0.6075,
+        "n": 3920,
+        "mae_baseline": 1.5357,
+        "mase": 0.9498,
+        "ganho_vs_baseline": 5.0234
+      }
+    },
+    "teste_por_horizonte": {
+      "1": {
+        "mae": 2.0738,
+        "rmse": 4.9994,
+        "mape": 81.6759,
+        "r2": 0.6851,
+        "vies": -1.1042,
+        "n": 1540,
+        "mae_baseline": 2.2435,
+        "mase": 0.9243,
+        "ganho_vs_baseline": 7.5663
+      },
+      "2": {
+        "mae": 2.1017,
+        "rmse": 5.0588,
+        "mape": 82.8269,
+        "r2": 0.6776,
+        "vies": -1.1328,
+        "n": 1540,
+        "mae_baseline": 2.2435,
+        "mase": 0.9368,
+        "ganho_vs_baseline": 6.3202
+      },
+      "3": {
+        "mae": 2.1274,
+        "rmse": 5.1022,
+        "mape": 83.9167,
+        "r2": 0.672,
+        "vies": -1.1532,
+        "n": 1540,
+        "mae_baseline": 2.2435,
+        "mase": 0.9483,
+        "ganho_vs_baseline": 5.1733
+      },
+      "4": {
+        "mae": 2.1424,
+        "rmse": 5.2063,
+        "mape": 83.8506,
+        "r2": 0.6585,
+        "vies": -1.1619,
+        "n": 1540,
+        "mae_baseline": 2.2435,
+        "mase": 0.9549,
+        "ganho_vs_baseline": 4.508
+      },
+      "5": {
+        "mae": 2.1571,
+        "rmse": 5.259,
+        "mape": 85.0757,
+        "r2": 0.6515,
+        "vies": -1.1759,
+        "n": 1540,
+        "mae_baseline": 2.2435,
+        "mase": 0.9615,
+        "ganho_vs_baseline": 3.8507
+      },
+      "6": {
+        "mae": 2.1672,
+        "rmse": 5.2647,
+        "mape": 86.0534,
+        "r2": 0.6508,
+        "vies": -1.1862,
+        "n": 1540,
+        "mae_baseline": 2.2435,
+        "mase": 0.966,
+        "ganho_vs_baseline": 3.4002
+      },
+      "7": {
+        "mae": 2.1826,
+        "rmse": 5.2674,
+        "mape": 85.5168,
+        "r2": 0.6504,
+        "vies": -1.1947,
+        "n": 1540,
+        "mae_baseline": 2.2435,
+        "mase": 0.9728,
+        "ganho_vs_baseline": 2.7167
+      }
+    },
+    "walk_forward": {
+      "janelas": 12,
+      "mae": 1.912,
+      "rmse": 3.782,
+      "mae_baseline": 2.308,
+      "mase": 0.836,
+      "dispersao_mae": 0.171,
+      "vitorias_sobre_baseline": 12,
+      "por_origem": [
+        {
+          "origem": "2025-10-08",
+          "mae": 2.09,
+          "mae_baseline": 2.62,
+          "n": 2695
+        },
+        {
+          "origem": "2025-10-15",
+          "mae": 1.91,
+          "mae_baseline": 2.09,
+          "n": 2695
+        },
+        {
+          "origem": "2025-10-22",
+          "mae": 1.99,
+          "mae_baseline": 2.36,
+          "n": 2695
+        },
+        {
+          "origem": "2025-10-29",
+          "mae": 1.61,
+          "mae_baseline": 1.94,
+          "n": 2695
+        },
+        {
+          "origem": "2025-11-05",
+          "mae": 2.04,
+          "mae_baseline": 2.48,
+          "n": 2695
+        },
+        {
+          "origem": "2025-11-12",
+          "mae": 2.01,
+          "mae_baseline": 2.22,
+          "n": 2695
+        },
+        {
+          "origem": "2025-11-19",
+          "mae": 1.77,
+          "mae_baseline": 2.46,
+          "n": 2695
+        },
+        {
+          "origem": "2025-11-26",
+          "mae": 1.81,
+          "mae_baseline": 2.58,
+          "n": 2695
+        },
+        {
+          "origem": "2025-12-03",
+          "mae": 1.73,
+          "mae_baseline": 2.11,
+          "n": 2695
+        },
+        {
+          "origem": "2025-12-10",
+          "mae": 1.77,
+          "mae_baseline": 1.81,
+          "n": 2695
+        },
+        {
+          "origem": "2025-12-17",
+          "mae": 1.98,
+          "mae_baseline": 2.16,
+          "n": 2695
+        },
+        {
+          "origem": "2025-12-24",
+          "mae": 2.24,
+          "mae_baseline": 2.87,
+          "n": 2695
+        }
+      ]
+    }
+  },
+  "baseline": {
+    "nome": "Baseline sazonal (mesmo dia da semana anterior)",
+    "validacao": {
+      "mae": 2.4422,
+      "rmse": 5.1612,
+      "mape": 80.7403,
+      "r2": 0.7752,
+      "vies": -0.0747,
+      "n": 10780,
+      "mae_baseline": 2.4422,
+      "mase": 1.0,
+      "ganho_vs_baseline": 0.0
+    },
+    "mae_teste": 2.244
+  },
+  "ganho_vs_baseline": 4.8,
+  "comparacao": [
+    {
+      "candidato": "Baseline sazonal",
+      "tipo": "baseline",
+      "algoritmo": "PreverColuna",
+      "vencedor": false,
+      "metricas": {
+        "mae": 2.4422,
+        "rmse": 5.1612,
+        "mase": 1.0,
+        "r2": 0.7752
+      }
+    },
+    {
+      "candidato": "Baseline média 7d",
+      "tipo": "baseline",
+      "algoritmo": "PreverColuna",
+      "vencedor": false,
+      "metricas": {
+        "mae": 2.4133,
+        "rmse": 5.1458,
+        "mase": 0.9882,
+        "r2": 0.7765
+      }
+    },
+    {
+      "candidato": "Ridge",
+      "tipo": "linear",
+      "algoritmo": "Ridge",
+      "vencedor": false,
+      "metricas": {
+        "mae": 2.1413,
+        "rmse": 4.5346,
+        "mase": 0.8768,
+        "r2": 0.8265
+      }
+    },
+    {
+      "candidato": "Random Forest",
+      "tipo": "arvore",
+      "algoritmo": "RandomForestRegressor",
+      "vencedor": false,
+      "metricas": {
+        "mae": 1.9749,
+        "rmse": 3.9709,
+        "mase": 0.8086,
+        "r2": 0.8669
+      }
+    },
+    {
+      "candidato": "XGBoost",
+      "tipo": "arvore",
+      "algoritmo": "XGBRegressor",
+      "vencedor": false,
+      "metricas": {
+        "mae": 1.9286,
+        "rmse": 3.8797,
+        "mase": 0.7897,
+        "r2": 0.873
+      }
+    },
+    {
+      "candidato": "LightGBM",
+      "tipo": "arvore",
+      "algoritmo": "LGBMRegressor",
+      "vencedor": true,
+      "metricas": {
+        "mae": 1.9068,
+        "rmse": 3.9218,
+        "mase": 0.7807,
+        "r2": 0.8702
+      }
+    }
+  ],
+  "comparacao_completa": [
+    {
+      "candidato": "Baseline sazonal",
+      "tipo": "baseline",
+      "algoritmo": "PreverColuna",
+      "hiperparametros": {},
+      "segundos_treino": 0.0,
+      "validacao": {
+        "mae": 2.4422,
+        "rmse": 5.1612,
+        "mape": 80.7403,
+        "r2": 0.7752,
+        "vies": -0.0747,
+        "n": 10780,
+        "mae_baseline": 2.4422,
+        "mase": 1.0,
+        "ganho_vs_baseline": 0.0
+      }
+    },
+    {
+      "candidato": "Baseline média 7d",
+      "tipo": "baseline",
+      "algoritmo": "PreverColuna",
+      "hiperparametros": {},
+      "segundos_treino": 0.0,
+      "validacao": {
+        "mae": 2.4133,
+        "rmse": 5.1458,
+        "mape": 72.01,
+        "r2": 0.7765,
+        "vies": -0.0574,
+        "n": 10780,
+        "mae_baseline": 2.4422,
+        "mase": 0.9882,
+        "ganho_vs_baseline": 1.1846
+      }
+    },
+    {
+      "candidato": "Ridge",
+      "tipo": "linear",
+      "algoritmo": "Ridge",
+      "hiperparametros": {
+        "modelo__alpha": 1.0
+      },
+      "segundos_treino": 0.19,
+      "validacao": {
+        "mae": 2.2744,
+        "rmse": 4.8198,
+        "mape": 72.5757,
+        "r2": 0.8039,
+        "vies": -1.2049,
+        "n": 10780,
+        "mae_baseline": 2.4422,
+        "mase": 0.9313,
+        "ganho_vs_baseline": 6.8696
+      }
+    },
+    {
+      "candidato": "Ridge",
+      "tipo": "linear",
+      "algoritmo": "Ridge",
+      "hiperparametros": {
+        "modelo__alpha": 10.0
+      },
+      "segundos_treino": 0.18,
+      "validacao": {
+        "mae": 2.2203,
+        "rmse": 4.7435,
+        "mape": 71.6788,
+        "r2": 0.8101,
+        "vies": -1.0707,
+        "n": 10780,
+        "mae_baseline": 2.4422,
+        "mase": 0.9091,
+        "ganho_vs_baseline": 9.0867
+      }
+    },
+    {
+      "candidato": "Ridge",
+      "tipo": "linear",
+      "algoritmo": "Ridge",
+      "hiperparametros": {
+        "modelo__alpha": 100.0
+      },
+      "segundos_treino": 0.18,
+      "validacao": {
+        "mae": 2.1413,
+        "rmse": 4.5346,
+        "mape": 70.1232,
+        "r2": 0.8265,
+        "vies": -0.8969,
+        "n": 10780,
+        "mae_baseline": 2.4422,
+        "mase": 0.8768,
+        "ganho_vs_baseline": 12.322
+      }
+    },
+    {
+      "candidato": "Random Forest",
+      "tipo": "arvore",
+      "algoritmo": "RandomForestRegressor",
+      "hiperparametros": {
+        "n_estimators": 300,
+        "min_samples_leaf": 5,
+        "max_features": 0.5,
+        "max_depth": 10
+      },
+      "segundos_treino": 24.71,
+      "validacao": {
+        "mae": 1.9749,
+        "rmse": 3.9709,
+        "mape": 56.4525,
+        "r2": 0.8669,
+        "vies": -0.6278,
+        "n": 10780,
+        "mae_baseline": 2.4422,
+        "mase": 0.8086,
+        "ganho_vs_baseline": 19.1356
+      }
+    },
+    {
+      "candidato": "Random Forest",
+      "tipo": "arvore",
+      "algoritmo": "RandomForestRegressor",
+      "hiperparametros": {
+        "n_estimators": 300,
+        "min_samples_leaf": 5,
+        "max_features": 0.5,
+        "max_depth": 14
+      },
+      "segundos_treino": 32.93,
+      "validacao": {
+        "mae": 1.9824,
+        "rmse": 4.0032,
+        "mape": 56.3902,
+        "r2": 0.8647,
+        "vies": -0.6352,
+        "n": 10780,
+        "mae_baseline": 2.4422,
+        "mase": 0.8117,
+        "ganho_vs_baseline": 18.8258
+      }
+    },
+    {
+      "candidato": "Random Forest",
+      "tipo": "arvore",
+      "algoritmo": "RandomForestRegressor",
+      "hiperparametros": {
+        "n_estimators": 300,
+        "min_samples_leaf": 10,
+        "max_features": 0.8,
+        "max_depth": 18
+      },
+      "segundos_treino": 62.29,
+      "validacao": {
+        "mae": 2.0085,
+        "rmse": 4.044,
+        "mape": 56.6162,
+        "r2": 0.862,
+        "vies": -0.6851,
+        "n": 10780,
+        "mae_baseline": 2.4422,
+        "mase": 0.8224,
+        "ganho_vs_baseline": 17.7592
+      }
+    },
+    {
+      "candidato": "XGBoost",
+      "tipo": "arvore",
+      "algoritmo": "XGBRegressor",
+      "hiperparametros": {
+        "n_estimators": 600,
+        "learning_rate": 0.05,
+        "max_depth": 5,
+        "subsample": 0.8,
+        "colsample_bytree": 0.8,
+        "reg_lambda": 1.0
+      },
+      "segundos_treino": 3.47,
+      "validacao": {
+        "mae": 1.9698,
+        "rmse": 4.0526,
+        "mape": 53.3149,
+        "r2": 0.8614,
+        "vies": -0.1274,
+        "n": 10780,
+        "mae_baseline": 2.4422,
+        "mase": 0.8066,
+        "ganho_vs_baseline": 19.3446
+      }
+    },
+    {
+      "candidato": "XGBoost",
+      "tipo": "arvore",
+      "algoritmo": "XGBRegressor",
+      "hiperparametros": {
+        "n_estimators": 400,
+        "learning_rate": 0.08,
+        "max_depth": 4,
+        "subsample": 0.9,
+        "colsample_bytree": 0.7,
+        "reg_lambda": 2.0
+      },
+      "segundos_treino": 2.03,
+      "validacao": {
+        "mae": 1.9375,
+        "rmse": 3.9667,
+        "mape": 52.7882,
+        "r2": 0.8672,
+        "vies": -0.0017,
+        "n": 10780,
+        "mae_baseline": 2.4422,
+        "mase": 0.7933,
+        "ganho_vs_baseline": 20.6654
+      }
+    },
+    {
+      "candidato": "XGBoost",
+      "tipo": "arvore",
+      "algoritmo": "XGBRegressor",
+      "hiperparametros": {
+        "n_estimators": 900,
+        "learning_rate": 0.03,
+        "max_depth": 6,
+        "subsample": 0.8,
+        "colsample_bytree": 0.6,
+        "reg_lambda": 3.0
+      },
+      "segundos_treino": 6.24,
+      "validacao": {
+        "mae": 1.9286,
+        "rmse": 3.8797,
+        "mape": 53.5973,
+        "r2": 0.873,
+        "vies": -0.2047,
+        "n": 10780,
+        "mae_baseline": 2.4422,
+        "mase": 0.7897,
+        "ganho_vs_baseline": 21.0285
+      }
+    },
+    {
+      "candidato": "LightGBM",
+      "tipo": "arvore",
+      "algoritmo": "LGBMRegressor",
+      "hiperparametros": {
+        "n_estimators": 600,
+        "learning_rate": 0.05,
+        "num_leaves": 31,
+        "subsample": 0.8,
+        "subsample_freq": 1,
+        "colsample_bytree": 0.8
+      },
+      "segundos_treino": 2.49,
+      "validacao": {
+        "mae": 1.9255,
+        "rmse": 3.8346,
+        "mape": 52.8228,
+        "r2": 0.8759,
+        "vies": -0.2611,
+        "n": 10780,
+        "mae_baseline": 2.4422,
+        "mase": 0.7884,
+        "ganho_vs_baseline": 21.1578
+      }
+    },
+    {
+      "candidato": "LightGBM",
+      "tipo": "arvore",
+      "algoritmo": "LGBMRegressor",
+      "hiperparametros": {
+        "n_estimators": 400,
+        "learning_rate": 0.08,
+        "num_leaves": 15,
+        "min_child_samples": 40,
+        "colsample_bytree": 0.7
+      },
+      "segundos_treino": 1.19,
+      "validacao": {
+        "mae": 1.9068,
+        "rmse": 3.9218,
+        "mape": 53.4755,
+        "r2": 0.8702,
+        "vies": -0.1324,
+        "n": 10780,
+        "mae_baseline": 2.4422,
+        "mase": 0.7807,
+        "ganho_vs_baseline": 21.9251
+      },
+      "vencedor": true
+    }
+  ],
+  "importancias": [
+    {
+      "feature": "media_mesmo_dow_4",
+      "descricao": "média do mesmo dia da semana nas últimas 4 semanas",
+      "importancia": 0.088,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "dia_mes",
+      "descricao": "dia do mês",
+      "importancia": 0.0786,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "mesmo_dow_4",
+      "descricao": "mesmo dia da semana, 4 semanas atrás",
+      "importancia": 0.0734,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "mesmo_dow_1",
+      "descricao": "mesmo dia da semana, 1 semana atrás",
+      "importancia": 0.0614,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "semana_ano",
+      "descricao": "semana do ano",
+      "importancia": 0.0596,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "mesmo_dow_3",
+      "descricao": "mesmo dia da semana, 3 semanas atrás",
+      "importancia": 0.0595,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "mesmo_dow_2",
+      "descricao": "mesmo dia da semana, 2 semanas atrás",
+      "importancia": 0.0575,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "dow",
+      "descricao": "dia da semana previsto",
+      "importancia": 0.0446,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "media_expandida",
+      "descricao": "patamar histórico da entidade",
+      "importancia": 0.0309,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "dow_sin",
+      "descricao": "dow sin",
+      "importancia": 0.0238,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "dow_cos",
+      "descricao": "dow cos",
+      "importancia": 0.0196,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "mttr_medio_media_28",
+      "descricao": "tempo médio de resolução no mês",
+      "importancia": 0.0195,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "criticos_media_28",
+      "descricao": "criticos — média do mês",
+      "importancia": 0.0187,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "mes",
+      "descricao": "mês",
+      "importancia": 0.0175,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "cv_28",
+      "descricao": "instabilidade relativa do último mês",
+      "importancia": 0.017,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "taxa_violacao_media_28",
+      "descricao": "taxa de violação de OLA no mês",
+      "importancia": 0.0164,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "mes_cos",
+      "descricao": "mes cos",
+      "importancia": 0.0159,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "p3_media_28",
+      "descricao": "média de incidentes P3 no mês",
+      "importancia": 0.0154,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "max_28",
+      "descricao": "máximo do último mês",
+      "importancia": 0.0145,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "share_ruido_7",
+      "descricao": "participação de chamados de monitoramento",
+      "importancia": 0.0134,
+      "tipo": "ganho"
+    }
+  ],
+  "importancia_permutacao": [
+    {
+      "feature": "media_mesmo_dow_4",
+      "descricao": "média do mesmo dia da semana nas últimas 4 semanas",
+      "queda_metrica": 1.73038,
+      "desvio": 0.03048
+    },
+    {
+      "feature": "media_expandida",
+      "descricao": "patamar histórico da entidade",
+      "queda_metrica": 0.43914,
+      "desvio": 0.00381
+    },
+    {
+      "feature": "mesmo_dow_4",
+      "descricao": "mesmo dia da semana, 4 semanas atrás",
+      "queda_metrica": 0.3032,
+      "desvio": 0.00531
+    },
+    {
+      "feature": "soma_14",
+      "descricao": "total dos últimos 14 dias",
+      "queda_metrica": 0.28835,
+      "desvio": 0.00539
+    },
+    {
+      "feature": "mesmo_dow_1",
+      "descricao": "mesmo dia da semana, 1 semana atrás",
+      "queda_metrica": 0.24825,
+      "desvio": 0.00312
+    },
+    {
+      "feature": "mesmo_dow_2",
+      "descricao": "mesmo dia da semana, 2 semanas atrás",
+      "queda_metrica": 0.19991,
+      "desvio": 0.00407
+    },
+    {
+      "feature": "dow",
+      "descricao": "dia da semana previsto",
+      "queda_metrica": 0.14395,
+      "desvio": 0.00299
+    },
+    {
+      "feature": "feriado",
+      "descricao": "é feriado",
+      "queda_metrica": 0.13621,
+      "desvio": 0.00724
+    },
+    {
+      "feature": "semana_ano",
+      "descricao": "semana do ano",
+      "queda_metrica": 0.12609,
+      "desvio": 0.00208
+    },
+    {
+      "feature": "mesmo_dow_3",
+      "descricao": "mesmo dia da semana, 3 semanas atrás",
+      "queda_metrica": 0.12318,
+      "desvio": 0.00222
+    },
+    {
+      "feature": "share_global_28",
+      "descricao": "peso da entidade no volume total",
+      "queda_metrica": 0.12259,
+      "desvio": 0.00205
+    },
+    {
+      "feature": "dia_mes",
+      "descricao": "dia do mês",
+      "queda_metrica": 0.08286,
+      "desvio": 0.00407
+    },
+    {
+      "feature": "soma_7",
+      "descricao": "total dos últimos 7 dias",
+      "queda_metrica": 0.07016,
+      "desvio": 0.00154
+    },
+    {
+      "feature": "cv_28",
+      "descricao": "instabilidade relativa do último mês",
+      "queda_metrica": 0.0654,
+      "desvio": 0.00153
+    },
+    {
+      "feature": "criticos_media_28",
+      "descricao": "criticos — média do mês",
+      "queda_metrica": 0.06403,
+      "desvio": 0.00224
+    },
+    {
+      "feature": "max_28",
+      "descricao": "máximo do último mês",
+      "queda_metrica": 0.06304,
+      "desvio": 0.00098
+    },
+    {
+      "feature": "vespera_feriado",
+      "descricao": "véspera de feriado",
+      "queda_metrica": 0.05994,
+      "desvio": 0.00692
+    },
+    {
+      "feature": "resolvidos_media_7",
+      "descricao": "incidentes resolvidos por dia na semana",
+      "queda_metrica": 0.05975,
+      "desvio": 0.00113
+    },
+    {
+      "feature": "itens_distintos_media_7",
+      "descricao": "ativos distintos afetados por dia",
+      "queda_metrica": 0.05336,
+      "desvio": 0.00256
+    },
+    {
+      "feature": "pos_feriado",
+      "descricao": "dia seguinte a feriado",
+      "queda_metrica": 0.04701,
+      "desvio": 0.00294
+    }
+  ],
+  "faixa": {
+    "cobertura_alvo": 0.8,
+    "cobertura_teste": 0.775,
+    "margens_relativas": {
+      "geral": 0.9221,
+      "por_chave": {
+        "categoria": 0.9575,
+        "equipe": 0.8035,
+        "global": 0.362,
+        "item": 1.0625,
+        "prioridade": 0.4875,
+        "produto": 0.9334
+      }
+    }
+  },
+  "linhas_treino": 111727,
+  "glossario": {
+    "mae": "Erro absoluto médio: de quantos incidentes o modelo erra, em média, por dia.",
+    "rmse": "Raiz do erro quadrático médio: pune erro grande mais que erro pequeno.",
+    "mape": "Erro percentual absoluto médio, calculado só nos dias com volume maior que zero.",
+    "r2": "Fração da variação do volume explicada pelo modelo (1,0 = perfeito; 0 = média).",
+    "mase": "Erro do modelo dividido pelo da baseline sazonal. Abaixo de 1, o modelo ganha.",
+    "vies": "Erro médio com sinal: positivo = o modelo vem subestimando o volume."
+  }
+}

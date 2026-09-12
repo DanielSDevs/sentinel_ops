@@ -1,0 +1,132 @@
+{% extends 'base.html' %}
+{% load modelos %}
+
+{% block title %}SentinelOps — Histórico de previsões{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1>Histórico de previsões</h1>
+    <p class="page-header__subtitle">
+        Cada previsão publicada ao lado do valor que o dia realmente trouxe.
+    </p>
+</div>
+
+<details class="explain" style="margin-bottom:var(--space-4);border-top:none">
+    <summary>Por que o erro desta tabela é maior que o do painel de modelos</summary>
+    <div class="explain__corpo">
+        O histórico acompanha a <strong>série global</strong>, com dezenas de incidentes por dia,
+        enquanto o MAE médio do painel mistura entidades que operam na casa de poucos incidentes
+        diários. A comparação justa é com a linha "global" da tabela de erro por entidade, no
+        cartão do modelo.
+    </div>
+</details>
+
+{% if not registros %}
+<div class="insight insight--warning">
+    <div class="insight__campo">
+        <span class="insight__rotulo">Sem histórico</span>
+        <span class="insight__texto">
+            Nenhuma previsão registrada ainda. Rode
+            <span class="mono">python manage.py treinar_modelos</span> (que já importa as
+            previsões do conjunto de teste) ou
+            <span class="mono">python manage.py registrar_previsoes</span> para publicar a
+            previsão de hoje.
+        </span>
+    </div>
+</div>
+{% else %}
+
+<section class="secao">
+    <div class="tiles">
+        <div class="tile">
+            <span class="tile__label">Previsões avaliadas</span>
+            <span class="tile__valor">{{ resumo.avaliadas }}</span>
+            <span class="tile__sub">{{ resumo.pendentes }} ainda aguardando o dia chegar</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">MAE observado</span>
+            <span class="tile__valor">{{ resumo.mae|default:"—" }}</span>
+            <span class="tile__sub">erro médio das previsões já conferidas</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Série acompanhada</span>
+            <span class="tile__valor" style="font-size:1.05rem">volume global</span>
+            <span class="tile__sub">compare com a linha "global" do cartão, não com o MAE agregado</span>
+        </div>
+        <div class="tile">
+            <span class="tile__label">Dentro da faixa</span>
+            <span class="tile__valor">
+                {% if resumo.dentro_da_faixa is not None %}{{ resumo.dentro_da_faixa }}%{% else %}—{% endif %}
+            </span>
+            <span class="tile__sub">a faixa se propõe a cobrir 80%</span>
+        </div>
+    </div>
+</section>
+
+<section class="secao">
+    <div class="secao__cabecalho">
+        <h2 class="secao__titulo">Previsão × real</h2>
+        <span class="secao__meta">
+            <a href="{% url 'ml:previsoes' %}">todos</a>
+            {% for modelo in modelos_disponiveis %}
+            · <a href="?modelo={{ modelo }}"
+                 {% if modelo == modelo_filtrado %}style="font-weight:600"{% endif %}>{{ modelo }}</a>
+            {% endfor %}
+        </span>
+    </div>
+    <div class="card">
+        <p class="card__subtitle">
+            <span class="chip chip--neutral">teste fora da amostra</span>
+            previsão feita por um modelo que não viu aquele dia, durante a avaliação do treino.
+            <span class="chip chip--healthy">previsão publicada</span>
+            previsão que a plataforma de fato exibiu, conferida depois. As duas coisas não se
+            misturam: só a segunda é evidência de que o modelo funciona em operação.
+        </p>
+        <div class="table-wrapper" style="margin-top:var(--space-3)">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Data alvo</th><th>Feita em</th><th>H</th><th>Previsão</th>
+                        <th>Faixa</th><th>Real</th><th>Erro</th><th>Modelo</th><th>Origem</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for registro in registros %}
+                    <tr>
+                        <td class="mono">{{ registro.data_alvo|date:"d/m/Y" }}</td>
+                        <td class="mono" style="opacity:.7">{{ registro.data_execucao|date:"d/m" }}</td>
+                        <td class="num">D+{{ registro.horizonte }}</td>
+                        <td class="num"><strong>{{ registro.valor_previsto|floatformat:0 }}</strong></td>
+                        <td class="num" style="opacity:.7">
+                            {{ registro.minimo|floatformat:0 }}–{{ registro.maximo|floatformat:0 }}
+                        </td>
+                        <td class="num">
+                            {% if registro.valor_real is not None %}
+                                {{ registro.valor_real|floatformat:0 }}
+                            {% else %}<span style="opacity:.5">aguardando</span>{% endif %}
+                        </td>
+                        <td class="num">
+                            {% if registro.erro is not None %}
+                                <span class="{% if registro.dentro_da_faixa %}sev-healthy{% else %}sev-warning{% endif %}">
+                                    {{ registro.erro|sinal }}{{ registro.erro|floatformat:1 }}
+                                </span>
+                            {% else %}—{% endif %}
+                        </td>
+                        <td class="mono" style="font-size:.74rem">
+                            {{ registro.modelo }}
+                            <div style="opacity:.6">{{ registro.algoritmo }}</div>
+                        </td>
+                        <td>
+                            <span class="chip chip--{% if registro.origem == 'producao' %}healthy{% else %}neutral{% endif %}">
+                                {{ registro.get_origem_display }}
+                            </span>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,9 @@
+# Dependências extras para executar os notebooks de modelos_ml/.
+# A plataforma não precisa de nada daqui: ela desenha os gráficos em SVG no servidor.
+-r requirements.txt
+
+matplotlib>=3.8
+seaborn>=0.13
+jupyter>=1.1
+nbconvert>=7.16
+ipykernel>=6.29

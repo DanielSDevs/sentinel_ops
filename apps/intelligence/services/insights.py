@@ -149,10 +149,10 @@ def _insights_anomalia():
             explicacao=(
                 f'Foram {anom.observado} ocorrências, contra a faixa esperada de '
                 f'{anom.esperado_min}–{anom.esperado_max} para esse dia — desvio de '
-                f'{anom.desvio_pct:+.0f}% (z={anom.z}).'
+                f'{anom.desvio_pct:+.0f}% acima do que esse dia costuma registrar.'
             ),
             impacto_texto=f'{anom.observado} ocorrências em um único dia',
-            evidencia='z-score contra baseline móvel de 21 dias da própria série',
+            evidencia='desvio contra o padrão móvel de 21 dias da própria série',
             acao=(
                 f'Investigar o pico de "{anom.chave}" em {anom.data:%d/%m}: verificar se houve '
                 'mudança/deploy na janela e se o desvio persiste.'

@@ -23,7 +23,8 @@ base mora em `/home/data/`, fora da pasta do código.
 | `config/settings.py` | Tudo que muda em produção vem de variável de ambiente. No App Service a variável `WEBSITE_HOSTNAME` existe sempre e liga o modo produção: `DEBUG` desligado, host liberado, cookies seguros, redirecionamento para HTTPS, WhiteNoise servindo os estáticos. Sem nenhuma variável, o projeto roda em dev como antes. |
 | `startup.sh` | Comando de inicialização: põe a base no lugar, roda `migrate` e sobe o gunicorn. |
 | `.github/workflows/azure-deploy.yml` | Testa, valida a configuração de produção, coleta os estáticos e publica. |
-| `requirements.txt` | Inclui `gunicorn` e `whitenoise`. |
+| `requirements.txt` | Inclui `gunicorn`, `whitenoise` e as bibliotecas de ML — que são de **produção**, não só de treino: a aplicação carrega os artefatos de `ml/models/` para prever a cada request. |
+| `ml/models/` | Artefatos treinados (`.pkl`) e cartões (`.json`), versionados e publicados junto com o código. Sem eles o app sobe, mas as telas de previsão mostram "modelo ainda não treinado". |
 
 Toda tela exige login (`LoginRequiredMiddleware`). O cadastro em `/contas/registro/` continua
 aberto: qualquer pessoa com a URL pode criar uma conta e entrar.
@@ -120,8 +121,18 @@ pronta.
 ```powershell
 python manage.py migrate
 python manage.py importar_dataset         # se a base local ainda não tem os dados
+python manage.py treinar_modelos          # retreina sobre a base que vai subir
 python manage.py createsuperuser          # o usuário administrador vai junto com a base
 ```
+
+**Treine antes de enviar a base.** Os artefatos de `ml/models/` são versionados e sobem pelo
+deploy de código; a base sobe por outro caminho (arquivo). Se você importar dados novos e não
+retreinar, o servidor fica com modelo antigo sobre dados novos — a previsão continua saindo, mas
+calibrada para um período que não é mais o atual. O treino também regrava o histórico de previsões
+de teste, que viaja dentro do `db.sqlite3`.
+
+> O App Service **não** treina: o plano B1 tem 1 vCPU e o treino leva ~9 minutos. Treinar é uma
+> operação de máquina de desenvolvimento; o servidor só carrega o `.pkl` e prevê.
 
 Pare o `runserver` antes de enviar. Tudo o que está na base local sobe junto: **usuários locais**
 (com senhas em hash) e **incidentes de simulação**. Se houver simulações, limpe-as pelo controle de

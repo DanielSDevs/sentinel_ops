@@ -1,0 +1,580 @@
+{
+  "nome": "model_pico",
+  "versao_formato": 1,
+  "treinado_em": "2026-09-12T00:12:02+00:00",
+  "titulo": "Risco de pico operacional",
+  "objetivo": "Probabilidade de o volume do dia previsto entrar no topo 20% da entidade.",
+  "tipo": "classificacao",
+  "ordem": 3,
+  "notebook": "modelos_ml/06_deteccao_de_anomalias.ipynb",
+  "algoritmo": "RandomForestClassifier (calibrado)",
+  "candidato": "Random Forest",
+  "hiperparametros": {
+    "n_estimators": 300,
+    "min_samples_leaf": 20,
+    "max_features": 0.5,
+    "max_depth": 14
+  },
+  "alvo": "volume em t+h ≥ percentil 80 da própria entidade",
+  "features": [
+    "lag_0",
+    "lag_1",
+    "lag_2",
+    "lag_3",
+    "lag_4",
+    "lag_5",
+    "lag_6",
+    "lag_7",
+    "lag_13",
+    "lag_14",
+    "lag_20",
+    "lag_21",
+    "lag_27",
+    "lag_28",
+    "soma_1",
+    "soma_2",
+    "soma_3",
+    "soma_7",
+    "soma_14",
+    "soma_30",
+    "media_3",
+    "media_7",
+    "media_14",
+    "media_28",
+    "desvio_7",
+    "desvio_14",
+    "desvio_28",
+    "min_7",
+    "max_7",
+    "max_28",
+    "var_7_vs_7",
+    "razao_7_28",
+    "delta_media_7_14",
+    "cv_28",
+    "dias_ativos_28",
+    "media_expandida",
+    "criticos_media_7",
+    "criticos_media_28",
+    "p2_media_7",
+    "p2_media_28",
+    "p3_media_7",
+    "p3_media_28",
+    "violacoes_media_7",
+    "violacoes_media_28",
+    "total_media_7",
+    "monitoramento_media_7",
+    "itens_distintos_media_7",
+    "familias_distintas_media_7",
+    "mttr_medio_media_7",
+    "mttr_medio_media_28",
+    "taxa_violacao_media_7",
+    "taxa_violacao_media_28",
+    "resolvidos_media_7",
+    "share_criticos_7",
+    "share_p2_7",
+    "share_p3_7",
+    "share_ruido_7",
+    "delta_mttr",
+    "delta_taxa_violacao",
+    "share_global_28",
+    "dim_global",
+    "dim_produto",
+    "dim_equipe",
+    "dim_categoria",
+    "dim_prioridade",
+    "dim_item",
+    "horizonte",
+    "mesmo_dow_1",
+    "mesmo_dow_2",
+    "mesmo_dow_3",
+    "mesmo_dow_4",
+    "media_mesmo_dow_4",
+    "dow",
+    "dia_mes",
+    "mes",
+    "semana_ano",
+    "fim_de_semana",
+    "feriado",
+    "vespera_feriado",
+    "pos_feriado",
+    "dow_sin",
+    "dow_cos",
+    "mes_sin",
+    "mes_cos",
+    "dow_origem"
+  ],
+  "n_features": 85,
+  "metrica_principal": "pr_auc",
+  "limiar_decisao": 0.1746,
+  "particoes": {
+    "treino": {
+      "linhas": 100947,
+      "inicio": "2025-02-12",
+      "fim": "2025-11-05"
+    },
+    "validacao": {
+      "linhas": 10780,
+      "inicio": "2025-11-06",
+      "fim": "2025-12-03"
+    },
+    "teste": {
+      "linhas": 10780,
+      "inicio": "2025-12-04",
+      "fim": "2025-12-31"
+    }
+  },
+  "metricas": {
+    "validacao": {
+      "accuracy": 0.7353,
+      "precision": 0.3264,
+      "recall": 0.6048,
+      "f1": 0.424,
+      "brier": 0.1601,
+      "limiar": 0.5,
+      "taxa_base": 0.161,
+      "positivos": 1736,
+      "n": 10780,
+      "roc_auc": 0.7694,
+      "pr_auc": 0.3317,
+      "matriz_confusao": {
+        "vn": 6877,
+        "fp": 2167,
+        "fn": 686,
+        "vp": 1050
+      }
+    },
+    "teste": {
+      "accuracy": 0.6377,
+      "precision": 0.1802,
+      "recall": 0.6948,
+      "f1": 0.2862,
+      "brier": 0.0953,
+      "limiar": 0.1746,
+      "taxa_base": 0.1045,
+      "positivos": 1127,
+      "n": 10780,
+      "roc_auc": 0.7196,
+      "pr_auc": 0.224,
+      "matriz_confusao": {
+        "vn": 6091,
+        "fp": 3562,
+        "fn": 344,
+        "vp": 783
+      }
+    }
+  },
+  "baseline": {
+    "nome": "Baseline (prevalência)",
+    "validacao": {
+      "accuracy": 0.839,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0,
+      "brier": 0.1472,
+      "limiar": 0.5,
+      "taxa_base": 0.161,
+      "positivos": 1736,
+      "n": 10780,
+      "roc_auc": 0.5,
+      "pr_auc": 0.161,
+      "matriz_confusao": {
+        "vn": 9044,
+        "fp": 0,
+        "fn": 1736,
+        "vp": 0
+      }
+    }
+  },
+  "comparacao": [
+    {
+      "candidato": "Baseline (taxa histórica)",
+      "tipo": "baseline",
+      "algoritmo": "RegraProbabilidade",
+      "vencedor": false,
+      "metricas": {
+        "pr_auc": 0.1669,
+        "roc_auc": 0.5008,
+        "f1": 0.266,
+        "recall": 0.8249
+      }
+    },
+    {
+      "candidato": "Baseline (prevalência)",
+      "tipo": "baseline",
+      "algoritmo": "DummyClassifier",
+      "vencedor": false,
+      "metricas": {
+        "pr_auc": 0.161,
+        "roc_auc": 0.5,
+        "f1": 0.0,
+        "recall": 0.0
+      }
+    },
+    {
+      "candidato": "Regressão logística",
+      "tipo": "linear",
+      "algoritmo": "LogisticRegression",
+      "vencedor": false,
+      "metricas": {
+        "pr_auc": 0.318,
+        "roc_auc": 0.7673,
+        "f1": 0.4362,
+        "recall": 0.6573
+      }
+    },
+    {
+      "candidato": "Random Forest",
+      "tipo": "arvore",
+      "algoritmo": "RandomForestClassifier",
+      "vencedor": true,
+      "metricas": {
+        "pr_auc": 0.3317,
+        "roc_auc": 0.7694,
+        "f1": 0.424,
+        "recall": 0.6048
+      }
+    },
+    {
+      "candidato": "XGBoost",
+      "tipo": "arvore",
+      "algoritmo": "XGBClassifier",
+      "vencedor": false,
+      "metricas": {
+        "pr_auc": 0.3177,
+        "roc_auc": 0.7716,
+        "f1": 0.4386,
+        "recall": 0.6555
+      }
+    },
+    {
+      "candidato": "LightGBM",
+      "tipo": "arvore",
+      "algoritmo": "LGBMClassifier",
+      "vencedor": false,
+      "metricas": {
+        "pr_auc": 0.3232,
+        "roc_auc": 0.7779,
+        "f1": 0.4479,
+        "recall": 0.6394
+      }
+    }
+  ],
+  "calibracao": {
+    "metodo": "Platt (sigmoide) ajustada na validação",
+    "brier_antes": 0.17844,
+    "brier_depois": 0.09532,
+    "probabilidade_media_antes": 0.36938,
+    "probabilidade_media_depois": 0.17303,
+    "taxa_real_teste": 0.10455
+  },
+  "importancias": [
+    {
+      "feature": "dow_sin",
+      "descricao": "dow sin",
+      "importancia": 0.1008,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "fim_de_semana",
+      "descricao": "é fim de semana",
+      "importancia": 0.0987,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "dow",
+      "descricao": "dia da semana previsto",
+      "importancia": 0.0937,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "media_expandida",
+      "descricao": "patamar histórico da entidade",
+      "importancia": 0.0913,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "semana_ano",
+      "descricao": "semana do ano",
+      "importancia": 0.0413,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "mttr_medio_media_28",
+      "descricao": "tempo médio de resolução no mês",
+      "importancia": 0.0403,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "dia_mes",
+      "descricao": "dia do mês",
+      "importancia": 0.0373,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "media_mesmo_dow_4",
+      "descricao": "média do mesmo dia da semana nas últimas 4 semanas",
+      "importancia": 0.0281,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "feriado",
+      "descricao": "é feriado",
+      "importancia": 0.0268,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "mttr_medio_media_7",
+      "descricao": "tempo médio de resolução na semana",
+      "importancia": 0.0259,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "mesmo_dow_1",
+      "descricao": "mesmo dia da semana, 1 semana atrás",
+      "importancia": 0.0197,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "cv_28",
+      "descricao": "instabilidade relativa do último mês",
+      "importancia": 0.0191,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "p3_media_28",
+      "descricao": "média de incidentes P3 no mês",
+      "importancia": 0.0173,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "desvio_28",
+      "descricao": "oscilação do último mês",
+      "importancia": 0.0168,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "delta_mttr",
+      "descricao": "aumento do tempo de resolução (7d vs 28d)",
+      "importancia": 0.0168,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "mesmo_dow_3",
+      "descricao": "mesmo dia da semana, 3 semanas atrás",
+      "importancia": 0.0154,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "share_ruido_7",
+      "descricao": "participação de chamados de monitoramento",
+      "importancia": 0.0154,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "mesmo_dow_4",
+      "descricao": "mesmo dia da semana, 4 semanas atrás",
+      "importancia": 0.0144,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "share_global_28",
+      "descricao": "peso da entidade no volume total",
+      "importancia": 0.0143,
+      "tipo": "ganho"
+    },
+    {
+      "feature": "mesmo_dow_2",
+      "descricao": "mesmo dia da semana, 2 semanas atrás",
+      "importancia": 0.0142,
+      "tipo": "ganho"
+    }
+  ],
+  "importancia_permutacao": [
+    {
+      "feature": "media_expandida",
+      "descricao": "patamar histórico da entidade",
+      "queda_metrica": 0.08947,
+      "desvio": 0.00692
+    },
+    {
+      "feature": "feriado",
+      "descricao": "é feriado",
+      "queda_metrica": 0.01874,
+      "desvio": 0.00323
+    },
+    {
+      "feature": "fim_de_semana",
+      "descricao": "é fim de semana",
+      "queda_metrica": 0.00959,
+      "desvio": 0.00353
+    },
+    {
+      "feature": "dow",
+      "descricao": "dia da semana previsto",
+      "queda_metrica": 0.00736,
+      "desvio": 0.00355
+    },
+    {
+      "feature": "dow_sin",
+      "descricao": "dow sin",
+      "queda_metrica": 0.00466,
+      "desvio": 0.00317
+    },
+    {
+      "feature": "media_mesmo_dow_4",
+      "descricao": "média do mesmo dia da semana nas últimas 4 semanas",
+      "queda_metrica": 0.00391,
+      "desvio": 0.00158
+    },
+    {
+      "feature": "mesmo_dow_3",
+      "descricao": "mesmo dia da semana, 3 semanas atrás",
+      "queda_metrica": 0.0036,
+      "desvio": 0.00154
+    },
+    {
+      "feature": "pos_feriado",
+      "descricao": "dia seguinte a feriado",
+      "queda_metrica": 0.00358,
+      "desvio": 0.00082
+    },
+    {
+      "feature": "dim_categoria",
+      "descricao": "entidade do tipo categoria",
+      "queda_metrica": 0.00336,
+      "desvio": 0.00306
+    },
+    {
+      "feature": "dim_item",
+      "descricao": "entidade do tipo item",
+      "queda_metrica": 0.00311,
+      "desvio": 0.00089
+    },
+    {
+      "feature": "itens_distintos_media_7",
+      "descricao": "ativos distintos afetados por dia",
+      "queda_metrica": 0.00213,
+      "desvio": 0.0009
+    },
+    {
+      "feature": "violacoes_media_28",
+      "descricao": "violações de OLA por dia no mês",
+      "queda_metrica": 0.00213,
+      "desvio": 0.00173
+    },
+    {
+      "feature": "mesmo_dow_1",
+      "descricao": "mesmo dia da semana, 1 semana atrás",
+      "queda_metrica": 0.00204,
+      "desvio": 0.00078
+    },
+    {
+      "feature": "mttr_medio_media_7",
+      "descricao": "tempo médio de resolução na semana",
+      "queda_metrica": 0.00201,
+      "desvio": 0.00067
+    },
+    {
+      "feature": "desvio_28",
+      "descricao": "oscilação do último mês",
+      "queda_metrica": 0.0018,
+      "desvio": 0.00066
+    },
+    {
+      "feature": "monitoramento_media_7",
+      "descricao": "chamados automáticos por dia na semana",
+      "queda_metrica": 0.00152,
+      "desvio": 0.00048
+    },
+    {
+      "feature": "desvio_14",
+      "descricao": "desvio 14",
+      "queda_metrica": 0.00149,
+      "desvio": 0.00049
+    },
+    {
+      "feature": "dim_equipe",
+      "descricao": "entidade do tipo equipe",
+      "queda_metrica": 0.00148,
+      "desvio": 0.00017
+    },
+    {
+      "feature": "p3_media_7",
+      "descricao": "média de incidentes P3 na semana",
+      "queda_metrica": 0.00103,
+      "desvio": 0.00011
+    },
+    {
+      "feature": "total_media_7",
+      "descricao": "volume bruto médio na semana",
+      "queda_metrica": 0.00093,
+      "desvio": 0.00057
+    }
+  ],
+  "limiares_pico": {
+    "categoria|cat103": 3.0,
+    "categoria|cat137": 4.0,
+    "categoria|cat18": 3.0,
+    "categoria|cat29": 3.0,
+    "categoria|cat31": 11.0,
+    "categoria|cat41": 3.0,
+    "categoria|cat71": 13.0,
+    "categoria|cat73": 5.0,
+    "categoria|cat76": 9.0,
+    "categoria|cat77": 7.0,
+    "categoria|cat85": 16.0,
+    "categoria|cat91": 6.0,
+    "equipe|Team02": 1.0,
+    "equipe|Team03": 2.0,
+    "equipe|Team05": 14.0,
+    "equipe|Team07": 1.0,
+    "equipe|Team08": 0.0,
+    "equipe|Team09": 8.0,
+    "equipe|Team10": 1.0,
+    "equipe|Team11": 37.0,
+    "equipe|Team12": 2.0,
+    "equipe|Team14": 34.0,
+    "equipe|Team16": 1.0,
+    "equipe|Team17": 2.0,
+    "global|": 96.0,
+    "item|IC00251": 2.0,
+    "item|IC00324": 4.0,
+    "item|IC00349": 14.0,
+    "item|IC00604": 4.0,
+    "item|IC00629": 2.0,
+    "item|IC00725": 5.0,
+    "item|IC00737": 2.0,
+    "item|IC01285": 4.0,
+    "prioridade|P2": 19.0,
+    "prioridade|P3": 78.0,
+    "produto|lcem": 15.0,
+    "produto|lcho": 3.0,
+    "produto|lcsi": 5.0,
+    "produto|lcsp": 1.0,
+    "produto|lemg": 2.0,
+    "produto|lemn": 1.0,
+    "produto|lexc": 1.0,
+    "produto|lgoa": 2.0,
+    "produto|lhco": 32.0,
+    "produto|lhvp": 8.0,
+    "produto|lrdo": 2.0,
+    "produto|lrel": 2.0,
+    "produto|lrev": 8.0,
+    "produto|lsaa": 3.0,
+    "produto|lsg2": 1.0,
+    "produto|lsin": 13.0,
+    "produto|lsmt": 1.0,
+    "produto|lssl": 2.6,
+    "produto|lvps": 2.0,
+    "produto|lwpl": 1.0
+  },
+  "linhas_treino": 111727,
+  "glossario": {
+    "precision": "Dos casos apontados como positivos, quantos eram de fato.",
+    "recall": "Dos casos positivos reais, quantos o modelo encontrou.",
+    "f1": "Média harmônica entre precisão e recall.",
+    "roc_auc": "Probabilidade de o modelo ordenar um positivo acima de um negativo (0,5 = acaso).",
+    "pr_auc": "Área sob a curva precisão-recall; é a métrica honesta quando a classe é rara.",
+    "brier": "Erro quadrático da probabilidade: mede calibração (quanto menor, melhor)."
+  }
+}
