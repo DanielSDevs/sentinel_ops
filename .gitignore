@@ -228,3 +228,8 @@ media/**
 # A documentação técnica gerada pelo projeto continua versionada.
 documentos/*
 !documentos/SentinelOps_Documentacao_Tecnica.docx
+
+# Perfil de publicacao do Azure App Service. E uma credencial: da acesso de publicacao ao app
+# e carrega userName/userPWD do Kudu. Nunca deve ser versionado.
+*.PublishSettings
+publish.xml
