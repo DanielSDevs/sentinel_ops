@@ -1,7 +1,7 @@
 {
   "nome": "model_anomalia",
   "versao_formato": 1,
-  "treinado_em": "2026-09-12T00:09:18+00:00",
+  "treinado_em": "2026-10-23T23:06:18+00:00",
   "titulo": "Detecção de anomalias",
   "objetivo": "Marcar dias cujo comportamento operacional foge do padrão da própria entidade.",
   "tipo": "anomalia",

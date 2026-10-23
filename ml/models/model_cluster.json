@@ -1,7 +1,7 @@
 {
   "nome": "model_cluster",
   "versao_formato": 1,
-  "treinado_em": "2026-09-12T00:04:22+00:00",
+  "treinado_em": "2026-10-23T23:06:18+00:00",
   "titulo": "Clusterização de produtos",
   "objetivo": "Agrupar produtos com comportamento operacional semelhante.",
   "tipo": "clusterizacao",

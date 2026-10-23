@@ -1,7 +1,7 @@
 {
   "nome": "model_ola",
   "versao_formato": 1,
-  "treinado_em": "2026-09-12T00:09:09+00:00",
+  "treinado_em": "2026-10-23T23:06:17+00:00",
   "titulo": "Risco de violação de OLA",
   "objetivo": "Probabilidade de um incidente elegível estourar o prazo de OLA da sua prioridade.",
   "tipo": "classificacao",

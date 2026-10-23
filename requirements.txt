@@ -6,21 +6,27 @@ gunicorn>=23.0
 whitenoise>=6.9
 
 # Leitura do LW-DATASET.xlsx por `python manage.py importar_dataset`.
-pandas>=2.2
-openpyxl>=3.1
-numpy>=1.26
+pandas==3.0.5
+openpyxl==3.1.5
+numpy==2.5.3
 
-# Machine Learning. Necessário também em produção, e não só no treino: a plataforma carrega os
+# Machine Learning. Versões FIXAS, iguais às do ambiente de treino: um .pkl só abre com as
+# mesmas bibliotecas que o gravaram (o shap 0.53+ não instala mais o numba e quebrava o CI).
+# Ao atualizar qualquer uma delas, retreine (`treinar_modelos`) e commite os artefatos.
+# Necessário também em produção, e não só no treino: a plataforma carrega os
 # artefatos de `ml/models/` para gerar previsão, risco de OLA, pico e anomalia a cada request.
 # Sem estes pacotes a aplicação sobe, mas as telas de previsão ficam no estado "modelo não
 # treinado" — por desenho, nunca com número inventado no lugar.
-scikit-learn>=1.7
-xgboost>=2.1
-lightgbm>=4.5
-joblib>=1.4
+scikit-learn==1.9.1
+xgboost==3.4.1
+lightgbm==4.7.0
+joblib==1.6.0
 # Explicabilidade local (contribuições SHAP). O explicador vai serializado dentro do .pkl,
 # então precisa estar instalado para o artefato ser carregado.
-shap>=0.46
+shap==0.52.0
+# O explicador do model_d1 referencia o numba no pickle; versões novas do shap deixaram de
+# instalá-lo como dependência, então ele precisa estar aqui explicitamente.
+numba==0.67.0
 
 # Gráficos dos notebooks de `modelos_ml/` (não usados pela aplicação, que desenha SVG no
 # servidor). Instale com `pip install -r requirements-notebooks.txt` se for rodar os notebooks.

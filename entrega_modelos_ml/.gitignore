@@ -1,0 +1,4 @@
+# Gerados ao executar os notebooks: base intermediária (grande) e modelos treinados.
+dados/
+artefatos/
+.ipynb_checkpoints/

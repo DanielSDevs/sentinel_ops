@@ -1,7 +1,7 @@
 {
   "nome": "model_pico",
   "versao_formato": 1,
-  "treinado_em": "2026-09-12T00:12:02+00:00",
+  "treinado_em": "2026-10-23T23:06:04+00:00",
   "titulo": "Risco de pico operacional",
   "objetivo": "Probabilidade de o volume do dia previsto entrar no topo 20% da entidade.",
   "tipo": "classificacao",

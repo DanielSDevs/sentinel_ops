@@ -1,8 +1,8 @@
 {
   "nome": "model_d7",
   "versao_formato": 1,
-  "treinado_em": "2026-09-12T00:08:40+00:00",
-  "titulo": "04",
+  "treinado_em": "2026-10-23T23:03:26+00:00",
+  "titulo": "Previsão D+7",
   "objetivo": "Volume diário dos próximos 7 dias, por entidade.",
   "tipo": "regressao",
   "ordem": 2,
@@ -521,7 +521,7 @@
       "hiperparametros": {
         "modelo__alpha": 1.0
       },
-      "segundos_treino": 0.19,
+      "segundos_treino": 0.18,
       "validacao": {
         "mae": 2.2744,
         "rmse": 4.8198,
@@ -541,7 +541,7 @@
       "hiperparametros": {
         "modelo__alpha": 10.0
       },
-      "segundos_treino": 0.18,
+      "segundos_treino": 0.2,
       "validacao": {
         "mae": 2.2203,
         "rmse": 4.7435,
@@ -584,7 +584,7 @@
         "max_features": 0.5,
         "max_depth": 10
       },
-      "segundos_treino": 24.71,
+      "segundos_treino": 24.43,
       "validacao": {
         "mae": 1.9749,
         "rmse": 3.9709,
@@ -607,7 +607,7 @@
         "max_features": 0.5,
         "max_depth": 14
       },
-      "segundos_treino": 32.93,
+      "segundos_treino": 32.89,
       "validacao": {
         "mae": 1.9824,
         "rmse": 4.0032,
@@ -630,7 +630,7 @@
         "max_features": 0.8,
         "max_depth": 18
       },
-      "segundos_treino": 62.29,
+      "segundos_treino": 59.9,
       "validacao": {
         "mae": 2.0085,
         "rmse": 4.044,
@@ -655,7 +655,7 @@
         "colsample_bytree": 0.8,
         "reg_lambda": 1.0
       },
-      "segundos_treino": 3.47,
+      "segundos_treino": 3.7,
       "validacao": {
         "mae": 1.9698,
         "rmse": 4.0526,
@@ -680,7 +680,7 @@
         "colsample_bytree": 0.7,
         "reg_lambda": 2.0
       },
-      "segundos_treino": 2.03,
+      "segundos_treino": 1.95,
       "validacao": {
         "mae": 1.9375,
         "rmse": 3.9667,
@@ -705,7 +705,7 @@
         "colsample_bytree": 0.6,
         "reg_lambda": 3.0
       },
-      "segundos_treino": 6.24,
+      "segundos_treino": 5.81,
       "validacao": {
         "mae": 1.9286,
         "rmse": 3.8797,
@@ -730,7 +730,7 @@
         "subsample_freq": 1,
         "colsample_bytree": 0.8
       },
-      "segundos_treino": 2.49,
+      "segundos_treino": 2.28,
       "validacao": {
         "mae": 1.9255,
         "rmse": 3.8346,
@@ -754,7 +754,7 @@
         "min_child_samples": 40,
         "colsample_bytree": 0.7
       },
-      "segundos_treino": 1.19,
+      "segundos_treino": 1.15,
       "validacao": {
         "mae": 1.9068,
         "rmse": 3.9218,

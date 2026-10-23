@@ -55,6 +55,12 @@ def artefato(nome):
         carregado = registry.carregar(nome)
     except FileNotFoundError:
         return None
+    except Exception:
+        # Artefato existe mas não abre — quase sempre biblioteca ausente ou em versão diferente da
+        # do treino (ver requirements.txt). Fica sem previsão, como se não houvesse modelo, e o
+        # motivo vai para o log em vez de derrubar a tela inteira com 500.
+        logger.exception('Modelo "%s" não pôde ser carregado', nome)
+        return None
     cache.set(chave, carregado, CACHE_TTL)
     return carregado
 

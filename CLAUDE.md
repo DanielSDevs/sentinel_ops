@@ -41,6 +41,8 @@ python manage.py test apps.ml                   # testes de um app (aqui COM o p
 python manage.py test apps.ml.tests.SplitsTest.test_corte_e_pela_data_alvo_e_nao_pela_origem
 ```
 
+O `LW-DATASET.xlsx` **não é versionado** (material do cliente) — é preciso colocá-lo em `documentos/` antes de importar. Dependências só dos notebooks (matplotlib, jupyter...) ficam em `requirements-notebooks.txt`; a plataforma não precisa delas. `python _verif.py` confere a base importada contra os números esperados do notebook (122.543 incidentes, 25.600 elegíveis, 248 violações) e cronometra a camada de inferência.
+
 `treinar_modelos` lê o banco já importado, treina, grava artefato + cartão por modelo, registra as
 previsões de teste no histórico e limpa o cache. Leva ~6 minutos e exige as dependências de ML do
 `requirements.txt`.
@@ -86,6 +88,7 @@ serve — não há uma segunda implementação de feature em lugar nenhum.
 
 | Módulo | Papel |
 |---|---|
+| `ml/src/config.py` | Constantes do pipeline: alvo (`total_kpi`), tamanho das partições (28 dias de teste e 28 de validação), top-N de entidades por dimensão, semente. O banco vem de `SQLITE_PATH`, a mesma variável do `settings.py`. |
 | `ml/src/dataset.py` | Lê incidentes e métricas do SQLite. Aceita caminho **ou conexão DBAPI** — a inferência passa a conexão do Django, e é isso que faz os testes rodarem no banco de teste. |
 | `ml/src/features.py` | `painel_diario` (entidade × dia) e `construir_features` (entidade × dia × horizonte). Também `features_incidentes`, para o modelo de OLA. |
 | `ml/src/splits.py` | Partições temporais **pela data-alvo**, walk-forward e detecção do início do regime operacional. |
@@ -152,13 +155,13 @@ Notas sobre alguns deles:
 - Interface em português brasileiro (`LANGUAGE_CODE = 'pt-br'`, fuso `America/Sao_Paulo`); código (identificadores) em inglês, exceto o domínio, que segue o vocabulário do dataset em português.
 - **Toda rota exige login** (`LoginRequiredMiddleware`). Uma view nova já nasce protegida; só as que precisam ficar abertas (login, cadastro) levam `@login_not_required`. Testes que abrem telas herdam de `TesteDeTela` (em `apps/core/tests.py`), que já faz o login.
 - As telas são renderizadas no servidor. `static/js/main.js` cuida só de interação (drawer da sidebar, link ativo, fechar alertas, animação de entrada dos cards) — não há geração de dados no cliente.
-- Sobraram da estrutura anterior alguns arquivos não referenciados (`core/home.html`, `monitor/index.html`, `alerts/index.html`, `reports/index.html` e os JS de módulo de accounts/alerts/copilot/monitor/reports). Não estenda esses arquivos; as telas vivas são as da tabela acima.
+- Sobraram da estrutura anterior alguns arquivos não referenciados (`core/home.html`, `monitor/index.html`, `alerts/index.html`, `reports/index.html` e os JS de módulo de accounts/alerts/copilot/monitor/reports). Não estenda esses arquivos; as telas vivas são as da tabela acima. O mesmo vale para `analytics/` (notebook único da Sprint 3, anterior ao pipeline de `ml/src/`) — os notebooks atuais são os de `modelos_ml/`.
 
 ### Testes
 
 `apps/core/tests.py` guarda as **fábricas compartilhadas** (`criar_incidente`, `criar_metrica`, `criar_serie`, `criar_serie_valores`, `montar_operacao`) e a classe base `TesteComCache`, que limpa o cache entre casos — sem isso, a âncora temporal de um teste vaza para o seguinte. Os cenários usam números redondos de propósito, para que o valor esperado possa ser conferido na mão.
 
-Cobertura atual: `apps/core` (âncora temporal, propriedades de `Incidente`, o bloqueio de acesso anônimo, e um smoke test que exige status 200 em todas as telas da sidebar **com e sem dados** — o estado vazio é onde aparecem divisões por zero), `apps/intelligence` (os nove serviços da camada de inferência e as quatro telas), `apps/forecast` (a camada de leitura e a narrativa, incluindo o caso "sem modelo treinado") e `apps/ml`. Os `tests.py` dos demais apps ainda são stubs.
+Cobertura atual: `apps/core` (âncora temporal, propriedades de `Incidente`, o bloqueio de acesso anônimo, e um smoke test que exige status 200 em todas as telas da sidebar **com e sem dados** — o estado vazio é onde aparecem divisões por zero), `apps/intelligence` (os nove serviços da camada de inferência e as quatro telas), `apps/forecast` (a camada de leitura e a narrativa, incluindo o caso "sem modelo treinado"), `apps/monitor` (rotulagem dos grupos de comportamento) e `apps/ml`. Os `tests.py` de accounts, alerts, reports e copilot ainda são stubs.
 
 Os testes de `apps/ml` merecem atenção porque cobrem o que não quebra sozinho: que o alvo nunca
 aparece entre as features, que as partições não se sobrepõem no tempo em nenhum horizonte, que as

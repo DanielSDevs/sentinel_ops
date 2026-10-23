@@ -1,8 +1,8 @@
 {
   "nome": "model_d1",
   "versao_formato": 1,
-  "treinado_em": "2026-09-12T00:05:44+00:00",
-  "titulo": "03",
+  "treinado_em": "2026-10-23T23:00:44+00:00",
+  "titulo": "Previsão D+1",
   "objetivo": "Volume de incidentes elegíveis a KPI no dia seguinte.",
   "tipo": "regressao",
   "ordem": 1,
@@ -437,7 +437,7 @@
       "hiperparametros": {
         "modelo__alpha": 1.0
       },
-      "segundos_treino": 0.05,
+      "segundos_treino": 0.06,
       "validacao": {
         "mae": 2.0727,
         "rmse": 4.3082,
@@ -457,7 +457,7 @@
       "hiperparametros": {
         "modelo__alpha": 10.0
       },
-      "segundos_treino": 0.03,
+      "segundos_treino": 0.02,
       "validacao": {
         "mae": 2.0303,
         "rmse": 4.2054,
@@ -477,7 +477,7 @@
       "hiperparametros": {
         "modelo__alpha": 100.0
       },
-      "segundos_treino": 0.03,
+      "segundos_treino": 0.02,
       "validacao": {
         "mae": 1.9563,
         "rmse": 3.9614,
@@ -500,7 +500,7 @@
         "max_features": 0.5,
         "max_depth": 10
       },
-      "segundos_treino": 3.91,
+      "segundos_treino": 3.14,
       "validacao": {
         "mae": 1.904,
         "rmse": 3.8011,
@@ -523,7 +523,7 @@
         "max_features": 0.5,
         "max_depth": 14
       },
-      "segundos_treino": 4.97,
+      "segundos_treino": 3.94,
       "validacao": {
         "mae": 1.9102,
         "rmse": 3.8141,
@@ -546,7 +546,7 @@
         "max_features": 0.8,
         "max_depth": 18
       },
-      "segundos_treino": 7.3,
+      "segundos_treino": 6.32,
       "validacao": {
         "mae": 1.9289,
         "rmse": 3.9361,
@@ -571,7 +571,7 @@
         "colsample_bytree": 0.8,
         "reg_lambda": 1.0
       },
-      "segundos_treino": 1.99,
+      "segundos_treino": 1.78,
       "validacao": {
         "mae": 1.8884,
         "rmse": 3.8688,
@@ -596,7 +596,7 @@
         "colsample_bytree": 0.7,
         "reg_lambda": 2.0
       },
-      "segundos_treino": 1.04,
+      "segundos_treino": 1.03,
       "validacao": {
         "mae": 1.8818,
         "rmse": 3.8565,
@@ -621,7 +621,7 @@
         "colsample_bytree": 0.6,
         "reg_lambda": 3.0
       },
-      "segundos_treino": 3.59,
+      "segundos_treino": 2.93,
       "validacao": {
         "mae": 1.8735,
         "rmse": 3.7791,
@@ -647,7 +647,7 @@
         "subsample_freq": 1,
         "colsample_bytree": 0.8
       },
-      "segundos_treino": 1.21,
+      "segundos_treino": 1.24,
       "validacao": {
         "mae": 1.9478,
         "rmse": 4.1049,
@@ -671,7 +671,7 @@
         "min_child_samples": 40,
         "colsample_bytree": 0.7
       },
-      "segundos_treino": 0.43,
+      "segundos_treino": 0.44,
       "validacao": {
         "mae": 1.883,
         "rmse": 3.9274,
