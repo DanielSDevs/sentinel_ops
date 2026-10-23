@@ -73,22 +73,84 @@ jobs:
       name: production
       url: ${{ steps.deploy.outputs.webapp-url }}
     steps:
-      - name: Conferir o perfil de publicação
+      - uses: actions/download-artifact@v4
+        with:
+          name: sentinelops
+
+      # Envio direto ao Kudu (/api/zipdeploy) com as credenciais do perfil de publicação.
+      # Não usamos azure/webapps-deploy@v3: ele exige que o Kudu informe WEBSITE_SLOT_NAME, e os
+      # apps Linux novos não informam — a action recusava um perfil válido com "Publish profile
+      # is invalid for app-name and slot-name provided". O build (Oryx) continua acontecendo no
+      # App Service por causa de SCM_DO_BUILD_DURING_DEPLOYMENT=true.
+      - name: Publicar pacote no App Service
+        id: deploy
         env:
           PUBLISH_PROFILE: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+          APP_NAME: ${{ vars.AZURE_WEBAPP_NAME }}
         run: |
           if [ -z "$PUBLISH_PROFILE" ]; then
             echo "::error::Segredo AZURE_WEBAPP_PUBLISH_PROFILE não configurado (ver DEPLOY.md)."
             exit 1
           fi
 
-      - uses: actions/download-artifact@v4
-        with:
-          name: sentinelops
+          # Lê o bloco ZipDeploy do perfil: host do Kudu, usuário, senha, URL do site e nome do app.
+          eval "$(python3 - <<'EOF'
+          import os, shlex, xml.etree.ElementTree as ET
+          raiz = ET.fromstring(os.environ['PUBLISH_PROFILE'].strip().lstrip('﻿'))
+          perfis = {p.get('publishMethod'): p for p in raiz.iter('publishProfile')}
+          zip_, msd = perfis['ZipDeploy'], perfis['MSDeploy']
+          campos = {
+              'SCM_HOST': zip_.get('publishUrl').split(':')[0],
+              'SCM_USER': zip_.get('userName'),
+              'SCM_PASS': zip_.get('userPWD'),
+              'SITE_URL': zip_.get('destinationAppUrl'),
+              'PERFIL_APP': msd.get('msdeploySite'),
+          }
+          for k, v in campos.items():
+              print(f'{k}={shlex.quote(v)}')
+          EOF
+          )"
+          echo "::add-mask::$SCM_PASS"
 
-      - uses: azure/webapps-deploy@v3
-        id: deploy
-        with:
-          app-name: ${{ vars.AZURE_WEBAPP_NAME }}
-          publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-          package: release.zip
+          if [ "${PERFIL_APP,,}" != "${APP_NAME,,}" ]; then
+            echo "::error::O perfil é do app '$PERFIL_APP', mas AZURE_WEBAPP_NAME é '$APP_NAME'."
+            exit 1
+          fi
+
+          echo "Enviando release.zip para $SCM_HOST"
+          status=$(curl -sS -o resposta.txt -D cabecalhos.txt -w '%{http_code}' \
+            -u "$SCM_USER:$SCM_PASS" -X POST --data-binary @release.zip \
+            -H 'Content-Type: application/zip' \
+            "https://$SCM_HOST/api/zipdeploy?isAsync=true")
+          if [ "$status" != "202" ] && [ "$status" != "200" ]; then
+            echo "::error::Kudu recusou o pacote (HTTP $status)."
+            cat resposta.txt
+            exit 1
+          fi
+
+          # O build no servidor (pip install de pandas, xgboost, shap...) leva alguns minutos.
+          acompanhar=$(grep -i '^location:' cabecalhos.txt | tr -d '\r' | awk '{print $2}')
+          acompanhar=${acompanhar:-https://$SCM_HOST/api/deployments/latest}
+          for i in $(seq 1 120); do
+            sleep 15
+            estado=$(curl -sS -u "$SCM_USER:$SCM_PASS" "$acompanhar" || true)
+            leitura=$(echo "$estado" | python3 -c "import json,sys
+          try:
+              d=json.load(sys.stdin); print(d.get('status'), d.get('complete'), d.get('status_text') or '')
+          except Exception:
+              print('? False')")
+            echo "[$((i*15))s] $leitura"
+            set -- $leitura
+            if [ "$2" = "True" ]; then
+              if [ "$1" = "4" ]; then
+                echo "webapp-url=$SITE_URL" >> "$GITHUB_OUTPUT"
+                echo "Publicado em $SITE_URL"
+                exit 0
+              fi
+              echo "::error::O deploy terminou com falha no App Service (status $1)."
+              curl -sS -u "$SCM_USER:$SCM_PASS" "https://$SCM_HOST/api/deployments/latest/log" | tail -c 4000 || true
+              exit 1
+            fi
+          done
+          echo "::error::O deploy não terminou em 30 minutos. Veja o Centro de Implantação no portal."
+          exit 1
