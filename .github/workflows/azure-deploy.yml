@@ -112,9 +112,10 @@ jobs:
           )"
           echo "::add-mask::$SCM_PASS"
 
+          # O destino é definido pelo perfil (as credenciais só valem para aquele app); a variável
+          # só liga o job. Divergência vira aviso, para não travar o deploy por um nome digitado.
           if [ "${PERFIL_APP,,}" != "${APP_NAME,,}" ]; then
-            echo "::error::O perfil é do app '$PERFIL_APP', mas AZURE_WEBAPP_NAME é '$APP_NAME'."
-            exit 1
+            echo "::warning::O perfil é do app '$PERFIL_APP', mas AZURE_WEBAPP_NAME é '$APP_NAME'. Publicando em '$PERFIL_APP'."
           fi
 
           echo "Enviando release.zip para $SCM_HOST"
